@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bit Transfer Collage Tool</title>
+    <link rel="stylesheet" href="css/slips.css?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Tesseract.js for OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Home</a>
+            <h1><i class="fas fa-receipt"></i> Bit Transfer Collage Tool</h1>
+            <p>Drag & drop, paste, or browse to add transfer slips. They will be neatly collaged into a single image.
+            </p>
+        </header>
+
+        <main>
+            <!-- Dropzone Area -->
+            <div id="dropzone" class="dropzone">
+                <div class="dropzone-content">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h2>Drag & Drop Images here</h2>
+                    <p>or paste (Ctrl+V) from clipboard</p>
+                    <div style="display:flex; gap:10px; margin-top:1rem; align-items:center;">
+                        <button id="mobile-paste-btn" class="browse-btn" style="margin-top:0;"><i class="fas fa-paste"></i> Paste</button>
+                        <label for="file-input" class="browse-btn" style="margin-top:0;">Browse Files</label>
+                    </div>
+                    <input type="file" id="file-input" multiple accept="image/*" class="hidden-input">
+                </div>
+            </div>
+
+            <!-- Previews -->
+            <div class="gallery-container">
+                <div class="gallery-header">
+                    <h3>Added Slips</h3>
+                    <div class="actions">
+                        <button id="clear-all-btn" class="action-btn danger"><i class="fas fa-trash"></i> Clear
+                            All</button>
+                        <button id="generate-btn" class="action-btn primary"><i class="fas fa-magic"></i> Generate
+                            Collage</button>
+                    </div>
+                </div>
+                
+                <!-- Auto Clean Section -->
+                <div class="auto-remove-container" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: var(--surface-light, #f8fafc); padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+                    <i class="fas fa-robot text-primary" style="font-size: 1.2rem; color: #3b82f6;"></i>
+                    <div style="display: flex; flex-direction: column; flex: 1;">
+                        <strong style="font-size: 0.9rem;">Auto Text Remover</strong>
+                        <span style="font-size: 0.8rem; color: #64748b;">Automatically scans images and erases a specified text (e.g. safegrid).</span>
+                    </div>
+                    <input type="text" id="auto-remove-text" placeholder="Word to auto-remove" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 200px;">
+                    <button id="auto-remove-btn" class="action-btn primary" style="margin: 0; padding: 10px 15px;"><i class="fas fa-search"></i> Scan & Clean</button>
+                    <div id="ocr-status" style="width: 100%; font-size: 0.85em; color: #3b82f6; display: none; margin-top: 5px; font-weight: 500;"><i class="fas fa-spinner fa-spin"></i> <span id="ocr-msg">Loading OCR Engine...</span></div>
+                </div>
+
+                <div id="preview-grid" class="preview-grid">
+                    <!-- Previews injected here -->
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div id="result-container" class="result-container hidden">
+                <div class="result-header">
+                    <h3>Collage Result</h3>
+                    <a id="download-btn" class="action-btn success" download="slips-collage.png"><i
+                            class="fas fa-download"></i> Download Image</a>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="collage-canvas"></canvas>
+                </div>
+            </div>
+        </main>
+    <!-- AI Eraser Modal -->
+    <div id="eraser-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-magic"></i> AI Watermark Eraser</h2>
+                <button id="close-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="editor-toolbar">
+                    <label>Brush Size:</label>
+                    <input type="range" id="brush-size" min="5" max="50" value="20">
+                    <button id="clear-mask-btn" class="action-btn danger"><i class="fas fa-undo"></i> Clear Mask</button>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="paint-canvas"></canvas>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="apply-ai-btn" class="action-btn primary"><i class="fas fa-check"></i> Apply Inpainting</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/slips.js?v=5"></script>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <style>
+    .st0{fill:#f0f0f0;}
+    .st1{fill:#4d84e2;}
+    .st2{fill:#3a5e9c;}
+    .st3{fill:#ffffff;}
+  </style>
+  <circle class="st0" cx="250" cy="250" r="200"/>
+  <path class="st1" d="M250,150c-55.2,0-100,44.8-100,100s44.8,100,100,100s100-44.8,100-100S305.2,150,250,150z M250,320c-38.7,0-70-31.3-70-70s31.3-70,70-70s70,31.3,70,70S288.7,320,250,320z"/>
+  <circle class="st2" cx="250" cy="250" r="50"/>
+  <circle class="st3" cx="220" cy="230" r="10"/>
+</svg>
