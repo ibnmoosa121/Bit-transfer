@@ -251,6 +251,30 @@ canvas {
     max-width: 100%;
     height: auto;
     box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+canvas:active {
+    transform: scale(0.98);
+}
+
+.copy-pulse {
+    animation: pulse 0.5s ease-out;
+}
+
+@keyframes pulse {
+    0% { outline: 0px solid var(--success-color); outline-offset: 0; }
+    50% { outline: 4px solid var(--success-color); outline-offset: 4px; }
+    100% { outline: 0px solid transparent; outline-offset: 10px; }
+}
+
+.copy-hint {
+    display: block;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
 }
 
 /* Scrollbar Styling */
@@ -354,3 +378,34 @@ canvas {
 }
 
 
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
+}
+
+.toast i {
+    color: var(--success-color);
+}

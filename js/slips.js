@@ -273,6 +273,83 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show result and setup download
         resultContainer.classList.remove('hidden');
         downloadBtn.href = collageCanvas.toDataURL('image/png');
+
+        // Scroll to result
+        resultContainer.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // --- Clipboard & Long Press Features ---
+
+    function showToast(message, icon = 'fa-check-circle') {
+        let toast = document.querySelector('.toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    async function copyCanvasToClipboard() {
+        try {
+            // Check if ClipboardItem is supported (needed for image copy)
+            if (!window.ClipboardItem) {
+                throw new Error('Your browser does not support copying images to the clipboard.');
+            }
+
+            collageCanvas.toBlob(async (blob) => {
+                if (!blob) {
+                    showToast('Failed to create image', 'fa-exclamation-triangle');
+                    return;
+                }
+                const data = [new ClipboardItem({ [blob.type]: blob })];
+                await navigator.clipboard.write(data);
+                showToast('Collage copied to clipboard!');
+                
+                // Add a little visual pulse to the canvas
+                collageCanvas.classList.add('copy-pulse');
+                setTimeout(() => collageCanvas.classList.remove('copy-pulse'), 500);
+            }, 'image/png');
+        } catch (err) {
+            console.error('Copy failed:', err);
+            alert('Clipboard access denied or unsupported. Ensure you are on a secure (HTTPS) connection.');
+        }
+    }
+
+    let collagePressTimer;
+    const LONG_PRESS_DURATION = 700;
+
+    const startPress = (e) => {
+        // Only trigger on left click (0) or touch
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        
+        collagePressTimer = setTimeout(() => {
+            copyCanvasToClipboard();
+        }, LONG_PRESS_DURATION);
+    };
+
+    const cancelPress = () => {
+        clearTimeout(collagePressTimer);
+    };
+
+    collageCanvas.addEventListener('mousedown', startPress);
+    collageCanvas.addEventListener('touchstart', startPress, { passive: true });
+    
+    collageCanvas.addEventListener('mouseup', cancelPress);
+    collageCanvas.addEventListener('mouseleave', cancelPress);
+    collageCanvas.addEventListener('touchend', cancelPress);
+    collageCanvas.addEventListener('touchmove', cancelPress);
+    
+    // Prevent context menu on long press on mobile to avoid interference
+    collageCanvas.addEventListener('contextmenu', (e) => {
+        if (window.innerWidth < 768) {
+            e.preventDefault();
+        }
     });
 
     // --- Mask Configurator Feature ---
