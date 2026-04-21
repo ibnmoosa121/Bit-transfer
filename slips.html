@@ -7,8 +7,6 @@
     <title>Bit Transfer Collage Tool</title>
     <link rel="stylesheet" href="css/slips.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Tesseract.js for OCR -->
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 </head>
 
 <body>
@@ -40,6 +38,7 @@
                 <div class="gallery-header">
                     <h3>Added Slips</h3>
                     <div class="actions">
+                        <button id="configure-mask-btn" class="action-btn" style="background-color: #64748b; color: white;"><i class="fas fa-crop"></i> Configure Masks</button>
                         <button id="clear-all-btn" class="action-btn danger"><i class="fas fa-trash"></i> Clear
                             All</button>
                         <button id="generate-btn" class="action-btn primary"><i class="fas fa-magic"></i> Generate
@@ -47,17 +46,6 @@
                     </div>
                 </div>
                 
-                <!-- Auto Clean Section -->
-                <div class="auto-remove-container" style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; background: var(--surface-light, #f8fafc); padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; flex-wrap: wrap;">
-                    <i class="fas fa-robot text-primary" style="font-size: 1.2rem; color: #3b82f6;"></i>
-                    <div style="display: flex; flex-direction: column; flex: 1;">
-                        <strong style="font-size: 0.9rem;">Auto Text Remover</strong>
-                        <span style="font-size: 0.8rem; color: #64748b;">Automatically scans images and erases a specified text (e.g. safegrid).</span>
-                    </div>
-                    <input type="text" id="auto-remove-text" placeholder="Word to auto-remove" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 200px;">
-                    <button id="auto-remove-btn" class="action-btn primary" style="margin: 0; padding: 10px 15px;"><i class="fas fa-search"></i> Scan & Clean</button>
-                    <div id="ocr-status" style="width: 100%; font-size: 0.85em; color: #3b82f6; display: none; margin-top: 5px; font-weight: 500;"><i class="fas fa-spinner fa-spin"></i> <span id="ocr-msg">Loading OCR Engine...</span></div>
-                </div>
 
                 <div id="preview-grid" class="preview-grid">
                     <!-- Previews injected here -->
@@ -75,29 +63,31 @@
                     <canvas id="collage-canvas"></canvas>
                 </div>
             </div>
+            
+            <!-- Mask Configurator Modal -->
+            <div id="mask-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-crop"></i> Setup Overlay Masks</h2>
+                        <button id="close-mask-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Draw boxes over areas you want to automatically hide. Upload a reference slip to start.</p>
+                        <div class="editor-toolbar">
+                            <label for="reference-upload" class="browse-btn" style="margin-top:0;">Upload Reference Image</label>
+                            <input type="file" id="reference-upload" accept="image/*" class="hidden-input">
+                            <button id="clear-masks-btn" class="action-btn danger"><i class="fas fa-trash"></i> Clear Boxes</button>
+                        </div>
+                        <div class="canvas-container" style="position: relative;">
+                            <canvas id="mask-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="save-masks-btn" class="action-btn success"><i class="fas fa-save"></i> Save Mask Template</button>
+                    </div>
+                </div>
+            </div>
         </main>
-    <!-- AI Eraser Modal -->
-    <div id="eraser-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-magic"></i> AI Watermark Eraser</h2>
-                <button id="close-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="editor-toolbar">
-                    <label>Brush Size:</label>
-                    <input type="range" id="brush-size" min="5" max="50" value="20">
-                    <button id="clear-mask-btn" class="action-btn danger"><i class="fas fa-undo"></i> Clear Mask</button>
-                </div>
-                <div class="canvas-container">
-                    <canvas id="paint-canvas"></canvas>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="apply-ai-btn" class="action-btn primary"><i class="fas fa-check"></i> Apply Inpainting</button>
-            </div>
-        </div>
-    </div>
 
     <script src="js/slips.js?v=5"></script>
 </body>

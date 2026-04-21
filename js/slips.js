@@ -10,6 +10,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let imagesData = []; // Store image objects: { id, file, imgElement }
 
+    // Define areas to automatically cover with white boxes globally
+    let overlays = [];
+    const savedMasks = localStorage.getItem('saved_slip_masks');
+    if (savedMasks) {
+        try {
+            overlays = JSON.parse(savedMasks);
+        } catch(e) {
+            overlays = [];
+        }
+    } else {
+        overlays = []; // Blank slate by default
+    }
+
     // Drag and Drop Events
     dropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -41,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mobile Paste Feature
     const mobilePasteBtn = document.getElementById('mobile-paste-btn');
-    
+
     async function triggerMobilePaste() {
         try {
             const clipboardItems = await navigator.clipboard.read();
@@ -60,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Could not access clipboard directly. Please ensure you allowed permission when prompted, or use the Browse button.');
         }
     }
-    
+
     if (mobilePasteBtn) {
         mobilePasteBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -91,19 +104,50 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFiles(files) {
         Array.from(files).forEach(file => {
             if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                        imagesData.push({ id, file, imgElement: img });
-                        renderPreviews();
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                processImageFile(file);
             }
         });
+    }
+
+    function processImageFile(file, existingId = null) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+
+                // Draw original image
+                ctx.drawImage(img, 0, 0);
+
+                // Add cover blocks based on configured masks
+                ctx.fillStyle = '#ffffff'; 
+                overlays.forEach(overlay => {
+                    ctx.fillRect(overlay.x, overlay.y, overlay.w, overlay.h);
+                });
+
+                const editedImg = new Image();
+                editedImg.onload = () => {
+                    if (existingId) {
+                        // Update existing entry
+                        const index = imagesData.findIndex(d => d.id === existingId);
+                        if (index !== -1) {
+                            imagesData[index].imgElement = editedImg;
+                        }
+                    } else {
+                        // Add new entry
+                        const id = Date.now() + Math.random().toString(36).substr(2, 9);
+                        imagesData.push({ id, file, imgElement: editedImg });
+                    }
+                    renderPreviews();
+                };
+                editedImg.src = canvas.toDataURL(file.type);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
     function renderPreviews() {
@@ -111,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         imagesData.forEach(data => {
             const div = document.createElement('div');
             div.className = 'preview-item';
-            
+
             const img = document.createElement('img');
             img.src = data.imgElement.src;
 
@@ -125,14 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultContainer.classList.add('hidden');
             };
 
-            const editBtn = document.createElement('button');
-            editBtn.className = 'edit-btn';
-            editBtn.title = 'AI Eraser';
-            editBtn.innerHTML = '<i class="fas fa-magic"></i>';
-            editBtn.onclick = () => openEraserTool(data);
-
             div.appendChild(img);
-            div.appendChild(editBtn);
             div.appendChild(removeBtn);
             previewGrid.appendChild(div);
         });
@@ -154,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const ctx = collageCanvas.getContext('2d');
-        
+
         // Find max width to keep all details
         let maxWidth = 0;
         imagesData.forEach(data => {
@@ -196,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             totalHeight: 0,
             rowHeights: []
         };
-        
+
         // Calculate total rows height
         for (let i = 0; i < N; i += bestCols) {
             let maxH = 0;
@@ -223,9 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let j = 0; j < bestCols && (i + j) < N; j++) {
                 let imgData = imagesData[i + j];
                 let currentX = j * cellWidth;
-                
+
                 let sHeight = scaledHeights[i + j];
-                
+
                 // Draw image aligned to the top of its row cell
                 ctx.drawImage(imgData.imgElement, currentX, currentY, cellWidth, sHeight);
             }
@@ -238,336 +275,247 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadBtn.href = collageCanvas.toDataURL('image/png');
     });
 
-    // -- AI Eraser Feature --
-    const modal = document.getElementById('eraser-modal');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-    const paintCanvas = document.getElementById('paint-canvas');
-    const applyAiBtn = document.getElementById('apply-ai-btn');
-    const clearMaskBtn = document.getElementById('clear-mask-btn');
-    const brushSizeInput = document.getElementById('brush-size');
+    // --- Mask Configurator Feature ---
+    const configureMaskBtn = document.getElementById('configure-mask-btn');
+    const maskModal = document.getElementById('mask-modal');
+    const closeMaskModalBtn = document.getElementById('close-mask-modal-btn');
+    const maskCanvas = document.getElementById('mask-canvas');
+    const refUpload = document.getElementById('reference-upload');
+    const clearMasksBtn = document.getElementById('clear-masks-btn');
+    const saveMasksBtn = document.getElementById('save-masks-btn');
+
+    let maskCtx = null;
+    if (maskCanvas) maskCtx = maskCanvas.getContext('2d');
     
-    let paintCtx = paintCanvas.getContext('2d');
-    let currentEditData = null;
-    let isDrawing = false;
-    let maskPaths = []; 
-    let currentPath = null;
-    
-    function openEraserTool(data) {
-        currentEditData = data;
-        modal.classList.remove('hidden');
-        maskPaths = [];
-        
-        // Scale to fit on screen if very large
-        const maxWidth = window.innerWidth * 0.8;
-        let scale = 1;
-        if (data.imgElement.width > maxWidth) {
-            scale = maxWidth / data.imgElement.width;
-        }
-        
-        paintCanvas.width = data.imgElement.width * scale;
-        paintCanvas.height = data.imgElement.height * scale;
-        paintCanvas.dataset.scale = scale;
-        
-        redrawEditor();
-    }
-    
-    closeModalBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        currentEditData = null;
-    });
-    
-    function redrawEditor() {
-        paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-        paintCtx.drawImage(currentEditData.imgElement, 0, 0, paintCanvas.width, paintCanvas.height);
-        
-        paintCtx.lineCap = 'round';
-        paintCtx.lineJoin = 'round';
-        paintCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)'; 
-        
-        maskPaths.forEach(path => {
-            if (path.points.length < 2) return;
-            paintCtx.lineWidth = path.size;
-            paintCtx.beginPath();
-            paintCtx.moveTo(path.points[0].x, path.points[0].y);
-            for (let i = 1; i < path.points.length; i++) {
-                paintCtx.lineTo(path.points[i].x, path.points[i].y);
+    let refImage = null;
+    let tempOverlays = [];
+    let isDrawingMask = false;
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    if (configureMaskBtn) {
+        configureMaskBtn.addEventListener('click', () => {
+            tempOverlays = [...overlays];
+            maskModal.classList.remove('hidden');
+            
+            // If we have an image in imagesData, use the first one as reference if none loaded
+            if (!refImage && imagesData.length > 0) {
+                refImage = imagesData[0].imgElement;
             }
-            paintCtx.stroke();
+            redrawMaskCanvas();
         });
     }
-    
-    function getMousePos(e) {
-        const rect = paintCanvas.getBoundingClientRect();
+
+    if (closeMaskModalBtn) {
+        closeMaskModalBtn.addEventListener('click', () => {
+            maskModal.classList.add('hidden');
+        });
+    }
+
+    if (refUpload) {
+        refUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    refImage = img;
+                    redrawMaskCanvas();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+            refUpload.value = ''; // Reset
+        });
+    }
+
+    function redrawMaskCanvas() {
+        if (!maskCtx) return;
+        if (!refImage) {
+            maskCanvas.width = 600;
+            maskCanvas.height = 600;
+            maskCtx.fillStyle = '#f1f5f9';
+            maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+            maskCtx.fillStyle = '#64748b';
+            maskCtx.font = '20px Arial';
+            maskCtx.textAlign = 'center';
+            maskCtx.fillText('Upload a reference image or add a slip first', 300, 300);
+        } else {
+            // Scale if it's too large for viewport
+            const maxWidth = window.innerWidth * 0.8;
+            let scale = 1;
+            if (refImage.width > maxWidth) {
+                scale = maxWidth / refImage.width;
+            }
+            
+            maskCanvas.width = refImage.width * scale;
+            maskCanvas.height = refImage.height * scale;
+            maskCanvas.dataset.scale = scale; // store scale 
+            
+            maskCtx.drawImage(refImage, 0, 0, maskCanvas.width, maskCanvas.height);
+            
+            // Adjust zoom transform for drawing masks relatively
+            maskCtx.scale(scale, scale);
+        }
+
+        // Draw existing masks
+        maskCtx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // Semi-transparent red
+        maskCtx.strokeStyle = '#ef4444';
+        maskCtx.lineWidth = 2;
+        
+        tempOverlays.forEach(overlay => {
+            maskCtx.fillRect(overlay.x, overlay.y, overlay.w, overlay.h);
+            maskCtx.strokeRect(overlay.x, overlay.y, overlay.w, overlay.h);
+        });
+
+        // Draw current dragging box
+        if (isDrawingMask) {
+            const w = currentX - startX;
+            const h = currentY - startY;
+            maskCtx.fillStyle = 'rgba(59, 130, 246, 0.4)'; // Blue while drawing
+            maskCtx.strokeStyle = '#3b82f6';
+            maskCtx.fillRect(startX, startY, w, h);
+            maskCtx.strokeRect(startX, startY, w, h);
+        }
+    }
+
+    function getMousePosRef(e) {
+        const rect = maskCanvas.getBoundingClientRect();
+        let scaleX = maskCanvas.dataset.scale ? parseFloat(maskCanvas.dataset.scale) : 1;
+        let scaleY = scaleX; // Maintaining uniform scale
+
+        // The displayed canvas bounds vs original image size resolving
+        // `rect.width` is the rendered CSS width. `maskCanvas.width` is the bitmap width.
+        // But since we scaled `maskCanvas.width` itself above, we need to consider how getMousePosRef works:
+        const cssScaleX = maskCanvas.width / rect.width;
+        const cssScaleY = maskCanvas.height / rect.height;
+
         let clientX = e.clientX;
         let clientY = e.clientY;
-        
-        // Touch normalization
+
         if (e.changedTouches && e.changedTouches.length > 0) {
             clientX = e.changedTouches[0].clientX;
             clientY = e.changedTouches[0].clientY;
         }
-        
+
+        // 1. Account for CSS stretching: (clientX - rect.left) * cssScaleX
+        // 2. Account for our explicit `scale` logic mapping it back to REAL image dimensions for saving.
         return {
-            x: clientX - rect.left,
-            y: clientY - rect.top
+            x: ((clientX - rect.left) * cssScaleX) / scaleX,
+            y: ((clientY - rect.top) * cssScaleY) / scaleY
         };
     }
-    
-    function startDraw(e) {
-        e.preventDefault(); // Prevents mobile page scrolling while drawing
-        isDrawing = true;
-        const pos = getMousePos(e);
-        currentPath = { points: [pos], size: brushSizeInput.value };
-        maskPaths.push(currentPath);
-        redrawEditor();
-    }
-    
-    function moveDraw(e) {
-        e.preventDefault();
-        if (!isDrawing) return;
-        const pos = getMousePos(e);
-        currentPath.points.push(pos);
-        redrawEditor();
-    }
-    
-    function endDraw() {
-        isDrawing = false;
-    }
-    
-    paintCanvas.addEventListener('mousedown', startDraw);
-    paintCanvas.addEventListener('mousemove', moveDraw);
-    window.addEventListener('mouseup', endDraw);
-    
-    paintCanvas.addEventListener('touchstart', startDraw, {passive: false});
-    paintCanvas.addEventListener('touchmove', moveDraw, {passive: false});
-    window.addEventListener('touchend', endDraw);
-    window.addEventListener('touchcancel', endDraw);
-    
-    clearMaskBtn.addEventListener('click', () => {
-        maskPaths = [];
-        redrawEditor();
-    });
-    
-    applyAiBtn.addEventListener('click', () => {
-        if (maskPaths.length === 0) {
-            alert('Please draw a mask over the watermark first.');
-            return;
-        }
-        applySimulatedInpainting();
-    });
-    
-    function applySimulatedInpainting() {
-        // 1. Create a canvas with the original image, but with the watermark CUT OUT
-        const holeCanvas = document.createElement('canvas');
-        holeCanvas.width = paintCanvas.width;
-        holeCanvas.height = paintCanvas.height;
-        const holeCtx = holeCanvas.getContext('2d');
-        
-        // Draw the image
-        holeCtx.drawImage(currentEditData.imgElement, 0, 0, holeCanvas.width, holeCanvas.height);
-        
-        // Erase the mask area completely (makes a transparent hole)
-        holeCtx.globalCompositeOperation = 'destination-out';
-        holeCtx.lineCap = 'round';
-        holeCtx.lineJoin = 'round';
-        holeCtx.strokeStyle = 'black'; 
-        maskPaths.forEach(path => {
-            if (path.points.length < 2) return;
-            holeCtx.lineWidth = parseInt(path.size) + 4; // safe margin
-            holeCtx.beginPath();
-            holeCtx.moveTo(path.points[0].x, path.points[0].y);
-            for (let i = 1; i < path.points.length; i++) {
-                holeCtx.lineTo(path.points[i].x, path.points[i].y);
-            }
-            holeCtx.stroke();
+
+    if (maskCanvas) {
+        maskCanvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (!refImage) return;
+            const pos = getMousePosRef(e);
+            startX = pos.x;
+            startY = pos.y;
+            currentX = pos.x;
+            currentY = pos.y;
+            isDrawingMask = true;
         });
 
-        // 2. We now build an "inpainting filler" by repeatedly blurring the holeCanvas.
-        // Since the watermark is missing, the blur forces surrounding colors into the hole without any watermark color leak!
-        const fillerCanvas = document.createElement('canvas');
-        fillerCanvas.width = paintCanvas.width;
-        fillerCanvas.height = paintCanvas.height;
-        const fillerCtx = fillerCanvas.getContext('2d');
-        
-        fillerCtx.filter = 'blur(15px)';
-        // Draw the holey-image over itself multiple times. This heavily bleeds surrounding pixels to fill the gap.
-        for (let i = 0; i < 20; i++) {
-            fillerCtx.drawImage(holeCanvas, 0, 0);
-        }
-        fillerCtx.filter = 'none';
-
-        // 3. Keep ONLY the beautifully filled area (the mask region) from the filler canvas
-        fillerCtx.globalCompositeOperation = 'destination-in';
-        fillerCtx.lineCap = 'round';
-        fillerCtx.lineJoin = 'round';
-        fillerCtx.strokeStyle = 'black';
-        maskPaths.forEach(path => {
-            if (path.points.length < 2) return;
-            fillerCtx.lineWidth = parseInt(path.size) + 8; // generous overlap for smooth blend
-            fillerCtx.beginPath();
-            fillerCtx.moveTo(path.points[0].x, path.points[0].y);
-            for (let i = 1; i < path.points.length; i++) {
-                fillerCtx.lineTo(path.points[i].x, path.points[i].y);
-            }
-            fillerCtx.stroke();
+        maskCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawingMask) return;
+            e.preventDefault();
+            const pos = getMousePosRef(e);
+            currentX = pos.x;
+            currentY = pos.y;
+            redrawMaskCanvas();
         });
 
-        // 4. Finally, assemble the image!
-        paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-        paintCtx.globalCompositeOperation = 'source-over';
-        paintCtx.drawImage(currentEditData.imgElement, 0, 0, paintCanvas.width, paintCanvas.height);
-        // Drop the seamlessly generated filler patch right over the watermark
-        paintCtx.drawImage(fillerCanvas, 0, 0);
-
-        // Update the image data internally
-        const updatedImg = new Image();
-        updatedImg.onload = () => {
-             const finalCanvas = document.createElement('canvas');
-             finalCanvas.width = currentEditData.imgElement.width;
-             finalCanvas.height = currentEditData.imgElement.height;
-             const finalCtx = finalCanvas.getContext('2d');
-             finalCtx.drawImage(updatedImg, 0, 0, finalCanvas.width, finalCanvas.height);
-             
-             const finalImg = new Image();
-             finalImg.onload = () => {
-                 currentEditData.imgElement = finalImg;
-                 renderPreviews();
-                 modal.classList.add('hidden');
-             };
-             // Add version stamp so browser doesn't cache the old image source
-             finalImg.src = finalCanvas.toDataURL('image/png') + '?v=' + Date.now();
-        };
-        updatedImg.src = paintCanvas.toDataURL('image/png');
-    }
-
-    // --- OCR Auto-Cleaner Feature ---
-    
-    // Helper to perform inpainting programmatically given rectangles
-    function inpaintImageRects(sourceImageElement, rects) {
-        return new Promise((resolve) => {
-            // 1. Cut holes
-            const holeCanvas = document.createElement('canvas');
-            holeCanvas.width = sourceImageElement.width;
-            holeCanvas.height = sourceImageElement.height;
-            const holeCtx = holeCanvas.getContext('2d');
-            holeCtx.drawImage(sourceImageElement, 0, 0);
-            
-            holeCtx.globalCompositeOperation = 'destination-out';
-            holeCtx.fillStyle = 'black'; 
-            rects.forEach(rect => {
-                // Add a small 4px padding outwards to ensure the whole word is covered
-                holeCtx.fillRect(rect.x - 4, rect.y - 4, rect.width + 8, rect.height + 8);
-            });
-
-            // 2. Blur filler
-            const fillerCanvas = document.createElement('canvas');
-            fillerCanvas.width = holeCanvas.width;
-            fillerCanvas.height = holeCanvas.height;
-            const fillerCtx = fillerCanvas.getContext('2d');
-            
-            fillerCtx.filter = 'blur(15px)';
-            for (let i = 0; i < 20; i++) {
-                fillerCtx.drawImage(holeCanvas, 0, 0);
-            }
-            fillerCtx.filter = 'none';
-
-            // 3. Keep only the filled regions
-            fillerCtx.globalCompositeOperation = 'destination-in';
-            fillerCtx.fillStyle = 'black';
-            rects.forEach(rect => {
-                fillerCtx.fillRect(rect.x - 8, rect.y - 8, rect.width + 16, rect.height + 16);
-            });
-
-            // 4. Assemble
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = sourceImageElement.width;
-            finalCanvas.height = sourceImageElement.height;
-            const finalCtx = finalCanvas.getContext('2d');
-            finalCtx.drawImage(sourceImageElement, 0, 0);
-            finalCtx.drawImage(fillerCanvas, 0, 0);
-
-            const updatedImg = new Image();
-            updatedImg.onload = () => {
-                 resolve(updatedImg);
-            };
-            updatedImg.src = finalCanvas.toDataURL('image/png') + '?v=' + Date.now();
-        });
-    }
-
-    const autoRemoveBtn = document.getElementById('auto-remove-btn');
-    const autoRemoveInput = document.getElementById('auto-remove-text');
-    const ocrStatus = document.getElementById('ocr-status');
-    const ocrMsg = document.getElementById('ocr-msg');
-
-    if(autoRemoveBtn) {
-        autoRemoveBtn.addEventListener('click', async () => {
-            const textToRemove = autoRemoveInput.value.trim().toLowerCase();
-            if (!textToRemove) {
-                alert("Please enter a word to remove.");
-                return;
-            }
-
-            if (imagesData.length === 0) {
-                alert("Please add some images first.");
-                return;
-            }
-
-            ocrStatus.style.display = 'block';
-            ocrMsg.textContent = 'Initializing AI OCR Engine... Please wait.';
-            autoRemoveBtn.disabled = true;
-
-            try {
-                let cleanedCount = 0;
-
-                for (let i = 0; i < imagesData.length; i++) {
-                    const data = imagesData[i];
-                    ocrMsg.textContent = `AI Processing image ${i + 1} of ${imagesData.length}...`;
-
-                    // 1. Convert the browser File back to FormData
-                    const formData = new FormData();
-                    formData.append('image', data.file);
-                    formData.append('prompt', textToRemove); // Tell FastAPI what to look for
-
-                    // 2. Send to our local Python FastAPI server
-                    const response = await fetch('http://localhost:8001/api/auto-clean', {
-                        method: 'POST',
-                        body: formData
+        window.addEventListener('mouseup', () => {
+            if (isDrawingMask) {
+                isDrawingMask = false;
+                
+                const w = currentX - startX;
+                const h = currentY - startY;
+                
+                // Only save if rect is large enough
+                if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+                    const rx = w < 0 ? currentX : startX;
+                    const ry = h < 0 ? currentY : startY;
+                    tempOverlays.push({
+                        x: Math.round(rx),
+                        y: Math.round(ry),
+                        w: Math.round(Math.abs(w)),
+                        h: Math.round(Math.abs(h))
                     });
-
-                    if (!response.ok) throw new Error('API failed');
-
-                    // 3. Receive the pristine image back as a Blob
-                    const blob = await response.blob();
-                    
-                    // 4. Update the UI
-                    const newImgUrl = URL.createObjectURL(blob);
-                    const newImg = new Image();
-                    
-                    // Wait for it to load, then swap it
-                    await new Promise((resolve) => {
-                        newImg.onload = resolve;
-                        newImg.src = newImgUrl;
-                    });
-
-                    // Overwrite the old image data with the newly cleaned one
-                    imagesData[i].imgElement = newImg;
-                    
-                    // Replace the stored file so collage generation uses the clean version
-                    imagesData[i].file = new File([blob], 'cleaned.png', { type: 'image/png' });
-                    cleanedCount++;
                 }
+                redrawMaskCanvas();
+            }
+        });
 
-                renderPreviews(); // Update UI
-                
-                ocrMsg.textContent = `Finished! Processed ${cleanedCount} images.`;
-                setTimeout(() => { ocrStatus.style.display = 'none'; }, 4000);
-                
-            } catch (err) {
-                console.error(err);
-                ocrMsg.textContent = "Error during AI process: " + err.message;
-            } finally {
-                autoRemoveBtn.disabled = false;
+        // Touch support
+        maskCanvas.addEventListener('touchstart', (e) => {
+            if (!refImage) return;
+            // Only stop default if touching the canvas directly to allow scrolling elsewhere
+            if (e.target === maskCanvas) e.preventDefault(); 
+            const pos = getMousePosRef(e);
+            startX = pos.x;
+            startY = pos.y;
+            currentX = pos.x;
+            currentY = pos.y;
+            isDrawingMask = true;
+        }, {passive: false});
+        
+        maskCanvas.addEventListener('touchmove', (e) => {
+            if (!isDrawingMask) return;
+            if (e.target === maskCanvas) e.preventDefault();
+            const pos = getMousePosRef(e);
+            currentX = pos.x;
+            currentY = pos.y;
+            redrawMaskCanvas();
+        }, {passive: false});
+
+        window.addEventListener('touchend', () => {
+            if(isDrawingMask) {
+                const w = currentX - startX;
+                const h = currentY - startY;
+                isDrawingMask = false;
+                if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+                    const rx = w < 0 ? currentX : startX;
+                    const ry = h < 0 ? currentY : startY;
+                    tempOverlays.push({
+                        x: Math.round(rx),
+                        y: Math.round(ry),
+                        w: Math.round(Math.abs(w)),
+                        h: Math.round(Math.abs(h))
+                    });
+                }
+                redrawMaskCanvas();
             }
         });
     }
+
+    if (clearMasksBtn) {
+        clearMasksBtn.addEventListener('click', () => {
+            tempOverlays = [];
+            redrawMaskCanvas();
+        });
+    }
+
+    if (saveMasksBtn) {
+        saveMasksBtn.addEventListener('click', () => {
+            overlays = [...tempOverlays];
+            localStorage.setItem('saved_slip_masks', JSON.stringify(overlays));
+            maskModal.classList.add('hidden');
+            
+            // Re-process all existing images with the new mask template
+            if (imagesData.length > 0) {
+                imagesData.forEach(data => {
+                    processImageFile(data.file, data.id);
+                });
+            }
+            
+            alert('Mask template saved successfully! Your current slips have been updated.');
+        });
+    }
+
 });
