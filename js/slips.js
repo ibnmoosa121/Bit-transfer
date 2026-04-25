@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
-    const previewGrid = document.getElementById('preview-grid');
     const clearAllBtn = document.getElementById('clear-all-btn');
-    const generateBtn = document.getElementById('generate-btn');
     const resultContainer = document.getElementById('result-container');
     const collageCanvas = document.getElementById('collage-canvas');
     const downloadBtn = document.getElementById('download-btn');
@@ -151,31 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPreviews() {
-        previewGrid.innerHTML = '';
-        imagesData.forEach(data => {
-            const div = document.createElement('div');
-            div.className = 'preview-item';
-
-            const img = document.createElement('img');
-            img.src = data.imgElement.src;
-
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'remove-btn';
-            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            removeBtn.onclick = () => {
-                imagesData = imagesData.filter(d => d.id !== data.id);
-                renderPreviews();
-                // hide result if images change
-                resultContainer.classList.add('hidden');
-            };
-
-            div.appendChild(img);
-            div.appendChild(removeBtn);
-            previewGrid.appendChild(div);
-        });
-
-        // hide result if new images added
+        // We no longer render the preview grid as it has been removed from the UI.
+        // hide result if new images added, it will be unhidden by generateCollage
         resultContainer.classList.add('hidden');
+
+        // Automatically generate collage if there is at least 1 image
+        if (imagesData.length > 0) {
+            generateCollage(true);
+        }
     }
 
     clearAllBtn.addEventListener('click', () => {
@@ -184,9 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
         resultContainer.classList.add('hidden');
     });
 
-    generateBtn.addEventListener('click', () => {
+    function generateCollage(isAuto = false) {
         if (imagesData.length === 0) {
-            alert('Please add some images first.');
+            if (!isAuto) alert('Please add some images first.');
             return;
         }
 
@@ -274,9 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
         resultContainer.classList.remove('hidden');
         downloadBtn.href = collageCanvas.toDataURL('image/png');
 
-        // Scroll to result
-        resultContainer.scrollIntoView({ behavior: 'smooth' });
-    });
+        // Scroll to result only if manually clicked
+        if (!isAuto) {
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
 
     // --- Clipboard & Long Press Features ---
 
