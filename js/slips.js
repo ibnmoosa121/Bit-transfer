@@ -5,6 +5,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultContainer = document.getElementById('result-container');
     const collageCanvas = document.getElementById('collage-canvas');
     const downloadBtn = document.getElementById('download-btn');
+    
+    // Mode Management
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    let currentMode = 'mask'; // 'mask' or 'template'
+    
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMode = btn.dataset.mode;
+            
+            // Re-process images if switching mode
+            if (imagesData.length > 0) {
+                imagesData = imagesData.map(data => {
+                    // We need to re-read the file to re-process
+                    processImageFile(data.file, data.id);
+                    return data;
+                });
+            }
+        });
+    });
 
     let imagesData = []; // Store image objects: { id, file, imgElement }
 
@@ -110,42 +131,76 @@ document.addEventListener('DOMContentLoaded', () => {
     function processImageFile(file, existingId = null) {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
+            const originalImg = new Image();
+            originalImg.onload = () => {
+                if (currentMode === 'template') {
+                    // --- MODE: CLEAN TEMPLATE ---
+                    const templateImg = new Image();
+                    templateImg.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = templateImg.width;
+                        canvas.height = templateImg.height;
+                        const ctx = canvas.getContext('2d');
 
-                // Draw original image
-                ctx.drawImage(img, 0, 0);
+                        // 1. Base Template
+                        ctx.drawImage(templateImg, 0, 0);
 
-                // Add cover blocks based on configured masks
-                ctx.fillStyle = '#ffffff'; 
-                overlays.forEach(overlay => {
-                    ctx.fillRect(overlay.x, overlay.y, overlay.w, overlay.h);
-                });
+                        // 2. Selective Harvest
+                        const scaleX = originalImg.width / templateImg.width;
+                        const scaleY = originalImg.height / templateImg.height;
 
-                const editedImg = new Image();
-                editedImg.onload = () => {
-                    if (existingId) {
-                        // Update existing entry
-                        const index = imagesData.findIndex(d => d.id === existingId);
-                        if (index !== -1) {
-                            imagesData[index].imgElement = editedImg;
-                        }
-                    } else {
-                        // Add new entry
-                        const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                        imagesData.push({ id, file, imgElement: editedImg });
-                    }
-                    renderPreviews();
-                };
-                editedImg.src = canvas.toDataURL(file.type);
+                        overlays.forEach(overlay => {
+                            ctx.drawImage(
+                                originalImg, 
+                                overlay.x * scaleX, overlay.y * scaleY, 
+                                overlay.w * scaleX, overlay.h * scaleY, 
+                                overlay.x, overlay.y, 
+                                overlay.w, overlay.h
+                            );
+                        });
+
+                        finishProcessing(canvas, file, existingId);
+                    };
+                    templateImg.src = 'img/template.png';
+                } else {
+                    // --- MODE: CLASSIC MASKING ---
+                    const canvas = document.createElement('canvas');
+                    canvas.width = originalImg.width;
+                    canvas.height = originalImg.height;
+                    const ctx = canvas.getContext('2d');
+
+                    // 1. Draw Original
+                    ctx.drawImage(originalImg, 0, 0);
+
+                    // 2. Apply White Box Masks
+                    ctx.fillStyle = '#ffffff'; 
+                    overlays.forEach(overlay => {
+                        ctx.fillRect(overlay.x, overlay.y, overlay.w, overlay.h);
+                    });
+
+                    finishProcessing(canvas, file, existingId);
+                }
             };
-            img.src = e.target.result;
+            originalImg.src = e.target.result;
         };
         reader.readAsDataURL(file);
+    }
+
+    function finishProcessing(canvas, file, existingId) {
+        const editedImg = new Image();
+        editedImg.onload = () => {
+            if (existingId) {
+                const index = imagesData.findIndex(d => d.id === existingId);
+                if (index !== -1) {
+                    imagesData[index].imgElement = editedImg;
+                }
+            } else {
+                const id = Date.now() + Math.random().toString(36).substr(2, 9);
+                imagesData.push({ id, file, imgElement: editedImg });
+            }
+            renderPreviews();
+        };
+        editedImg.src = canvas.toDataURL('image/png');
     }
 
     function renderPreviews() {
@@ -360,11 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
             tempOverlays = [...overlays];
             maskModal.classList.remove('hidden');
             
-            // If we have an image in imagesData, use the first one as reference if none loaded
-            if (!refImage && imagesData.length > 0) {
-                refImage = imagesData[0].imgElement;
+            // Default to using the template as the reference image for perfect alignment
+            if (!refImage) {
+                const img = new Image();
+                img.onload = () => {
+                    refImage = img;
+                    redrawMaskCanvas();
+                };
+                img.src = 'img/template.png';
+            } else {
+                redrawMaskCanvas();
             }
-            redrawMaskCanvas();
         });
     }
 
