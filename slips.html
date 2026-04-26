@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bit Transfer</title>
-    <link rel="stylesheet" href="css/slips.css?v=2">
+    <title>Bit Transfer | Collage Dashboard</title>
+    <link rel="stylesheet" href="css/slips.css?v=10">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Favicons -->
@@ -17,94 +17,106 @@
 </head>
 
 <body>
-    <div class="app-container">
+    <div class="app-wrapper">
         <header>
-            <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Home</a>
-            <h1><i class="fas fa-receipt"></i> Bit Transfer Collage Tool</h1>
-            <p>Drag & drop, paste, or browse to add transfer slips. They will be neatly collaged into a single image.
-            </p>
+            <h1><i class="fas fa-bolt"></i> Bit Transfer</h1>
+            <a href="index.html" class="back-btn"><i class="fas fa-home"></i> Home</a>
         </header>
 
         <main>
-            <!-- Dropzone Area -->
-            <div id="dropzone" class="dropzone">
-                <div class="dropzone-content">
-                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                    <h2>Drag & Drop Images here</h2>
-                    <p>or paste (Ctrl+V) from clipboard</p>
-                    <div style="display:flex; gap:10px; margin-top:1rem; align-items:center;">
-                        <button id="mobile-paste-btn" class="browse-btn" style="margin-top:0;"><i
-                                class="fas fa-paste"></i> Paste</button>
-                        <label for="file-input" class="browse-btn" style="margin-top:0;">Browse Files</label>
-                    </div>
-                    <input type="file" id="file-input" multiple accept="image/*" class="hidden-input">
-                </div>
-            </div>
-
-            <div class="mode-selector">
-                <button id="mode-mask-btn" class="mode-btn active" data-mode="mask"><i class="fas fa-mask"></i> Classic Masking</button>
-                <button id="mode-template-btn" class="mode-btn" data-mode="template"><i class="fas fa-magic"></i> Clean Template</button>
-            </div>
-
-            <div class="actions"
-                style="margin-top: 1rem; margin-bottom: 2rem; display: flex; justify-content: center; gap: 10px;">
-                <button id="configure-mask-btn" class="action-btn" style="background-color: #64748b; color: white;"><i
-                        class="fas fa-crop"></i> Configure Masks</button>
-                <button id="clear-all-btn" class="action-btn danger"><i class="fas fa-trash"></i> Clear All</button>
-            </div>
-
-            <!-- Result Section -->
-            <div id="result-container" class="result-container hidden">
-                <div class="result-header">
-                    <h3>Collage Result</h3>
-                    <a id="download-btn" class="action-btn success" download="slips-collage.png"><i
-                            class="fas fa-download"></i> Download Image</a>
-                </div>
-                <div class="canvas-wrapper">
-                    <canvas id="collage-canvas"></canvas>
-                </div>
-                <p class="copy-hint"><i class="fas fa-info-circle"></i> Tip: Long press image to copy to clipboard</p>
-            </div>
-
-            <!-- Mask Configurator Modal -->
-            <div id="mask-modal" class="modal hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-crop"></i> Setup Overlay Masks</h2>
-                        <button id="close-mask-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Draw boxes over areas. In <b>Clean Template</b> mode, select the field label first.</p>
-                        <div class="editor-toolbar">
-                            <label for="reference-upload" class="browse-btn" style="margin-top:0;">Upload Reference</label>
-                            <input type="file" id="reference-upload" accept="image/*" class="hidden-input">
-                            
-                            <select id="field-label-select" class="browse-btn" style="margin-top:0; background-color: white; color: var(--text-primary); border: 1px solid var(--border-color);">
-                                <option value="mask">Generic Mask</option>
-                                <option value="amount">Amount (₹)</option>
-                                <option value="name">Name</option>
-                                <option value="ifsc">IFSC</option>
-                                <option value="account">Account</option>
-                                <option value="orderno">Order No</option>
-                                <option value="date">Date</option>
-                                <option value="utr">UTR</option>
-                            </select>
-                            
-                            <button id="clear-masks-btn" class="action-btn danger"><i class="fas fa-trash"></i> Clear All</button>
-                        </div>
-                        <div class="canvas-container" style="position: relative;">
-                            <canvas id="mask-canvas"></canvas>
+            <!-- Left Panel: Controls -->
+            <section class="controls-panel">
+                <div class="panel-section">
+                    <div id="dropzone" class="dropzone">
+                        <div class="dropzone-content">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h2>Upload Slips</h2>
+                            <p>Drag images or paste from clipboard</p>
+                            <div style="display:flex; gap:10px; margin-top:1.5rem; justify-content: center;">
+                                <button id="mobile-paste-btn" class="browse-btn" style="margin-top:0; background: #94a3b8;"><i class="fas fa-paste"></i> Paste</button>
+                                <label for="file-input" class="browse-btn" style="margin-top:0;">Browse</label>
+                            </div>
+                            <input type="file" id="file-input" multiple accept="image/*" class="hidden-input">
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button id="save-masks-btn" class="action-btn success"><i class="fas fa-save"></i> Save Mask
-                            Template</button>
+                </div>
+
+                <div class="panel-section">
+                    <p style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Output Mode</p>
+                    <div class="mode-selector">
+                        <button id="mode-mask-btn" class="mode-btn active" data-mode="mask"><i class="fas fa-shield-alt"></i> Classic</button>
+                        <button id="mode-template-btn" class="mode-btn" data-mode="template"><i class="fas fa-sparkles"></i> Clean</button>
                     </div>
                 </div>
-            </div>
+
+                <div class="panel-section">
+                    <p style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Workspace Actions</p>
+                    <div class="actions-stack">
+                        <button id="configure-mask-btn" class="action-btn secondary"><i class="fas fa-sliders-h"></i> Configure Masks</button>
+                        <button id="clear-all-btn" class="action-btn danger"><i class="fas fa-trash-alt"></i> Reset Workspace</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Live Workspace -->
+            <section class="workspace-panel">
+                <div id="result-container" class="result-container hidden fade-in">
+                    <div class="result-header">
+                        <h3>Collage Preview</h3>
+                        <a id="download-btn" class="action-btn success" download="slips-collage.png" style="width: auto;"><i class="fas fa-download"></i> Download PNG</a>
+                    </div>
+                    <div class="canvas-frame">
+                        <canvas id="collage-canvas"></canvas>
+                    </div>
+                    <p class="copy-hint"><i class="fas fa-info-circle"></i> Long press the image to copy to clipboard</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state" style="text-align: center; margin-top: 10vh;">
+                    <i class="fas fa-images" style="font-size: 4rem; color: #cbd5e1; margin-bottom: 1.5rem;"></i>
+                    <h2 style="color: #94a3b8;">No Slips Added</h2>
+                    <p style="color: #94a3b8;">Upload or paste images to see the live collage</p>
+                </div>
+            </section>
         </main>
 
-        <script src="js/slips.js?v=5"></script>
+        <!-- Mask Configurator Modal -->
+        <div id="mask-modal" class="modal hidden">
+            <div class="modal-content fade-in">
+                <div class="modal-header">
+                    <h2><i class="fas fa-vector-square"></i> Mask Configuration</h2>
+                    <button id="close-mask-modal-btn" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="editor-toolbar">
+                        <label for="reference-upload" class="browse-btn" style="margin-top:0; background: #f1f5f9; color: var(--text-main);"><i class="fas fa-image"></i> Change Ref</label>
+                        <input type="file" id="reference-upload" accept="image/*" class="hidden-input">
+                        
+                        <select id="field-label-select" class="browse-btn" style="margin-top:0; background-color: white; color: var(--text-primary); border: 1px solid #e2e8f0;">
+                            <option value="mask">Generic Mask</option>
+                            <option value="amount">Amount (₹)</option>
+                            <option value="name">Name</option>
+                            <option value="ifsc">IFSC</option>
+                            <option value="account">Account</option>
+                            <option value="orderno">Order No</option>
+                            <option value="date">Date</option>
+                            <option value="utr">UTR</option>
+                        </select>
+                        
+                        <button id="clear-masks-btn" class="action-btn danger" style="width: auto; padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fas fa-eraser"></i> Clear Canvas</button>
+                    </div>
+                    <div class="canvas-container">
+                        <canvas id="mask-canvas"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-masks-btn" class="action-btn success" style="width: auto;"><i class="fas fa-check-circle"></i> Apply Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/slips.js?v=10"></script>
 </body>
 
 </html>

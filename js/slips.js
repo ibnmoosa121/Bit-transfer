@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeBtns = document.querySelectorAll('.mode-btn');
     let currentMode = 'mask'; // 'mask' or 'template'
     
+    const emptyState = document.getElementById('empty-state');
+    
     modeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             modeBtns.forEach(b => b.classList.remove('active'));
@@ -19,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-process images if switching mode
             if (imagesData.length > 0) {
                 imagesData = imagesData.map(data => {
-                    // We need to re-read the file to re-process
                     processImageFile(data.file, data.id);
                     return data;
                 });
@@ -204,20 +205,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPreviews() {
-        // We no longer render the preview grid as it has been removed from the UI.
-        // hide result if new images added, it will be unhidden by generateCollage
-        resultContainer.classList.add('hidden');
-
-        // Automatically generate collage if there is at least 1 image
         if (imagesData.length > 0) {
+            if (emptyState) emptyState.style.display = 'none';
+            resultContainer.classList.remove('hidden');
             generateCollage(true);
+        } else {
+            if (emptyState) emptyState.style.display = 'block';
+            resultContainer.classList.add('hidden');
         }
     }
 
     clearAllBtn.addEventListener('click', () => {
         imagesData = [];
         renderPreviews();
-        resultContainer.classList.add('hidden');
     });
 
     function generateCollage(isAuto = false) {
