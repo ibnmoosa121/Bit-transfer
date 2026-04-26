@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bit Transfer - Authentication</title>
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <title>Bit Transfer | Professional Slip Management</title>
+    <link rel="stylesheet" href="css/style.css?v=5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Favicons -->
@@ -17,104 +17,92 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="forms-container">
-            <div class="signin-signup">
-                <!-- Sign In Form -->
-                <form action="#" class="sign-in-form">
-                    <h2 class="title">Sign In</h2>
-                    <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" id="signin-username" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" id="signin-password" required>
-                    </div>
-                    <input type="submit" value="Login" class="btn solid">
-                    <p class="social-text">Or Sign in with social platforms</p>
-                    <div class="social-media">
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-google"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                    </div>
-                </form>
-
-                <!-- Sign Up Form -->
-                <form action="#" class="sign-up-form">
-                    <h2 class="title">Sign Up</h2>
-                    <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" id="signup-username" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" placeholder="Email" id="signup-email" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" id="signup-password" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Confirm Password" id="signup-confirm-password" required>
-                    </div>
-                    <input type="submit" value="Sign Up" class="btn solid">
-                    <p class="social-text">Or Sign up with social platforms</p>
-                    <div class="social-media">
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-google"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="panels-container">
-            <div class="panel left-panel">
-                <div class="content">
-                    <h3>New here?</h3>
-                    <p>Join our Crypto P2P platform and start trading securely with other users!</p>
-                    <button class="btn transparent" id="sign-up-btn">Sign Up</button>
-                    <br>
-                    <a href="slips.html" class="btn transparent"
-                        style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; margin-top: 15px; border-color: #fff;">
-                        <i class="fas fa-receipt" style="margin-right: 8px;"></i> Slips
-                    </a>
+    <div class="landing-wrapper">
+        <nav>
+            <div class="nav-content">
+                <div class="logo">
+                    <i class="fas fa-bolt"></i>
+                    <span>Bit Transfer</span>
                 </div>
-                <img src="img/log.svg" class="image" alt="Login illustration">
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="slips.html" class="nav-cta">Launch App</a>
+                </div>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-content fade-in">
+                <span class="badge">Privacy First Tool</span>
+                <h1>Master Your <span class="gradient-text">Transfer Slips</span> with Precision.</h1>
+                <p>The ultimate professional utility for redacting sensitive data and generating high-quality transaction reports. Built for the crypto era.</p>
+                
+                <div class="hero-actions">
+                    <a href="slips.html" class="btn-primary">Get Started Now <i class="fas fa-arrow-right"></i></a>
+                    <a href="#features" class="btn-secondary">Learn More</a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <strong>100%</strong>
+                        <span>Secure</span>
+                    </div>
+                    <div class="stat">
+                        <strong>Instant</strong>
+                        <span>Collage</span>
+                    </div>
+                    <div class="stat">
+                        <strong>HD</strong>
+                        <span>Templates</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-visual fade-in">
+                <div class="glass-card">
+                    <img src="img/logo.png" alt="Bit Transfer Dashboard" class="main-visual">
+                    <div class="floating-badge">
+                        <i class="fas fa-check-circle"></i> Smart Harvest Active
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="section-header">
+                <h2>Why Professionals Choose Us</h2>
+                <p>Everything you need to manage and secure your transaction evidence.</p>
             </div>
 
-            <div class="panel right-panel">
-                <div class="content">
-                    <h3>One of us?</h3>
-                    <p>Already have an account? Sign in to continue your crypto journey!</p>
-                    <button class="btn transparent" id="sign-in-btn">Sign In</button>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon-box"><i class="fas fa-magic"></i></div>
+                    <h3>Smart Harvest</h3>
+                    <p>Automatically extract transaction data and inject it into clean, professional templates.</p>
                 </div>
-                <img src="img/register.svg" class="image" alt="Register illustration">
+                <div class="feature-card">
+                    <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Privacy Redaction</h3>
+                    <p>Hide sensitive bank details with our classic masking tools before sharing with others.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box"><i class="fas fa-th-large"></i></div>
+                    <h3>Collage Engine</h3>
+                    <p>Upload multiple slips and generate a single, perfectly aligned image for easy reporting.</p>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <footer>
+            <div class="footer-content">
+                <p>&copy; 2026 Bit Transfer. Professional Utility Tool. Not a financial institution.</p>
+                <div class="footer-links">
+                    <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                    <a href="#"><i class="fab fa-twitter"></i> Support</a>
+                </div>
+            </div>
+        </footer>
     </div>
-
-    <script src="js/app.js"></script>
 </body>
 
 </html>
