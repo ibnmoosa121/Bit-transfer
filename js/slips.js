@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalImg = new Image();
             originalImg.onload = () => {
                 if (currentMode === 'template') {
-                    // --- MODE: CLEAN TEMPLATE ---
+                    // --- MODE: CUSTOM TEMPLATE ---
                     const templateImg = new Image();
                     templateImg.onload = () => {
                         const canvas = document.createElement('canvas');
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     templateImg.src = 'img/template.png';
                 } else {
-                    // --- MODE: CLASSIC MASKING ---
+                    // --- MODE: WATERMARK REMOVAL ---
                     const canvas = document.createElement('canvas');
                     canvas.width = originalImg.width;
                     canvas.height = originalImg.height;
