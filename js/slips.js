@@ -160,10 +160,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        templates = allTemplates;
-        if (selectedTemplateIndex === -1 && templates.length > 0) {
-            selectedTemplateIndex = 0;
+        // Preserve default if it exists and isn't already in the list
+        const defaultT = templates.find(t => t.name === 'Default');
+        if (defaultT && !allTemplates.some(t => t.name === 'Default')) {
+            allTemplates.unshift(defaultT); // Keep default at the top
+        } else if (!allTemplates.some(t => t.name === 'Default')) {
+            // Re-create default if it's missing entirely
+            const img = new Image();
+            img.src = 'img/template.png';
+            allTemplates.unshift({ image: img, name: 'Default', isLocal: true });
         }
+
+        templates = allTemplates;
+        
+        // Robust selection logic
+        if (templates.length > 0) {
+            if (selectedTemplateIndex < 0 || selectedTemplateIndex >= templates.length) {
+                selectedTemplateIndex = 0;
+            }
+            // Update the trigger UI immediately
+            const t = templates[selectedTemplateIndex];
+            if (selectedTemplateName) selectedTemplateName.textContent = t.name;
+            if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
+        } else {
+            selectedTemplateIndex = -1;
+        }
+        
         renderLibrary();
     };
 
@@ -460,7 +482,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imagesData.length === 0) return;
         const ctx = collageCanvas.getContext('2d');
         let maxWidth = 0;
-        imagesData.forEach(d => { if (d.imgElement.width > maxWidth) maxWidth = d.imgElement.width; });
+        imagesData.forEach(d => { 
+            if (d.imgElement && d.imgElement.width > maxWidth) maxWidth = d.imgElement.width; 
+        });
+        
+        if (maxWidth === 0) return; // Wait for images to load
         const cellWidth = Math.min(maxWidth, 1500);
         const scaledHeights = imagesData.map(d => (cellWidth / d.imgElement.width) * d.imgElement.height);
 
