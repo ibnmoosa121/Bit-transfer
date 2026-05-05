@@ -70,6 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const maskConfigContainer = document.getElementById('mask-config-container');
     
     const libraryContainer = document.getElementById('library-container');
+    const templateTrigger = document.getElementById('template-trigger');
+    const templateDropdown = document.getElementById('template-dropdown');
+    const selectedTemplateName = document.getElementById('selected-template-name');
+    const selectedTemplateImg = document.getElementById('selected-template-img');
 
     const uploadFinalBtn = document.getElementById('upload-final-btn');
     const finalTemplateInput = document.getElementById('final-template-input');
@@ -246,6 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial UI Setup
     toggleModeUI();
 
+    // Toggle Dropdown
+    if (templateTrigger) {
+        templateTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            templateDropdown.classList.toggle('active');
+        });
+    }
+
+    document.addEventListener('click', () => {
+        if (templateDropdown) templateDropdown.classList.remove('active');
+    });
+
     function renderLibrary() {
         if (!libraryContainer) return;
         libraryContainer.innerHTML = '';
@@ -260,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="delete-template-btn" title="Delete Template"><i class="fas fa-times"></i></button>
             `;
             
+            if (idx === selectedTemplateIndex) {
+                if (selectedTemplateName) selectedTemplateName.textContent = t.name;
+                if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
+            }
+
             // Delete Logic
             const deleteBtn = item.querySelector('.delete-template-btn');
             deleteBtn.onclick = async (e) => {
@@ -294,11 +315,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             item.onclick = () => {
                 selectedTemplateIndex = idx;
+                if (selectedTemplateName) selectedTemplateName.textContent = t.name;
+                if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
+                
                 renderLibrary();
                 if (imagesData.length > 0) {
                     imagesData.forEach(d => processImageFile(d.file, d.id));
                 }
                 showToast(`Template "${t.name}" selected`);
+                if (templateDropdown) templateDropdown.classList.remove('active');
             };
             libraryContainer.appendChild(item);
         });
