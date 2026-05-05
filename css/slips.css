@@ -420,7 +420,7 @@ header h1 i {
 
 /* Workbench Body */
 .workbench-body {
-    padding: 2rem;
+    padding: 1.25rem;
     flex: 1;
     min-height: 400px;
     display: flex;
@@ -560,7 +560,7 @@ header h1 i {
 .canvas-viewport, .editor-viewport {
     background: rgba(248, 250, 252, 0.5);
     border-radius: var(--radius-md);
-    padding: 2.5rem;
+    padding: 1.25rem;
     border: 2px dashed var(--border-light);
     display: flex;
     justify-content: center;

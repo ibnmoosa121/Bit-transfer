@@ -503,33 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (saveAsTemplateBtn) {
-        saveAsTemplateBtn.addEventListener('click', () => {
-            const img = isEditingReference ? referenceToEdit : refImage;
-            if (!img) return;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            ctx.fillStyle = '#ffffff';
-            tempOverlays.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
-            
-            const resultImg = new Image();
-            resultImg.onload = () => {
-                templates.push(resultImg);
-                selectedTemplateIndex = templates.length - 1;
-                renderLibrary();
-                if (imagesData.length > 0) {
-                    imagesData.forEach(d => processImageFile(d.file, d.id));
-                }
-                showToast('Image saved as template background!');
-                currentStep = 3;
-                updateWorkflowUI();
-            };
-            resultImg.src = canvas.toDataURL('image/png');
-        });
-    }
 
     function openConfigurator(img = null, forReference = false) {
         isEditingReference = forReference;
@@ -553,8 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadRefBtn.classList.add('hidden');
         
         maskAllBtn.classList.remove('hidden');
-        if (currentMode === 'template') saveAsTemplateBtn.classList.remove('hidden');
-        else saveAsTemplateBtn.classList.add('hidden');
 
         const maskAllSpan = maskAllBtn.querySelector('span');
         if (maskAllSpan) maskAllSpan.textContent = `Mask Full (${targetImg.width}x${targetImg.height})`;
