@@ -257,7 +257,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 <img src="${t.image.src}" alt="${t.name}">
                 <div class="template-label">${t.name}</div>
                 ${t.isLocal ? '<div class="local-badge"><i class="fas fa-hdd"></i></div>' : '<div class="cloud-badge"><i class="fas fa-cloud"></i></div>'}
+                <button class="delete-template-btn" title="Delete Template"><i class="fas fa-times"></i></button>
             `;
+            
+            // Delete Logic
+            const deleteBtn = item.querySelector('.delete-template-btn');
+            deleteBtn.onclick = async (e) => {
+                e.stopPropagation();
+                if (!confirm(`Are you sure you want to delete "${t.name}"?`)) return;
+
+                try {
+                    if (t.isLocal) {
+                        await deleteLocalTemplate(t.id);
+                    } else if (supabase) {
+                        const { error } = await supabase.from('templates').delete().eq('id', t.id);
+                        if (error) throw error;
+                    }
+                    
+                    templates.splice(idx, 1);
+                    if (selectedTemplateIndex === idx) {
+                        selectedTemplateIndex = templates.length > 0 ? 0 : -1;
+                    } else if (selectedTemplateIndex > idx) {
+                        selectedTemplateIndex--;
+                    }
+                    
+                    renderLibrary();
+                    if (imagesData.length > 0) {
+                        imagesData.forEach(d => processImageFile(d.file, d.id));
+                    }
+                    showToast(`"${t.name}" deleted.`);
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    showToast('Failed to delete template.');
+                }
+            };
+
             item.onclick = () => {
                 selectedTemplateIndex = idx;
                 renderLibrary();

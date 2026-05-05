@@ -350,6 +350,42 @@ header h1 i {
     background: var(--success);
 }
 
+.delete-template-btn {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    cursor: pointer;
+    z-index: 4;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+}
+
+.library-item:hover .delete-template-btn {
+    display: flex;
+}
+
+.delete-template-btn:hover {
+    transform: scale(1.2);
+    background: #e11d48;
+}
+
+@media (max-width: 768px) {
+    .delete-template-btn {
+        display: flex; /* Always show on mobile for accessibility */
+        opacity: 0.7;
+    }
+}
+
 .library-item:hover:not(.active) {
     transform: translateY(-2px);
     border-color: var(--border-light);
