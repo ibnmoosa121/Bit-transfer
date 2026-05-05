@@ -631,15 +631,22 @@ document.addEventListener('DOMContentLoaded', () => {
         currentX = p.x; currentY = p.y; 
         redrawMaskCanvas(); 
     });
-    window.addEventListener('mouseup', () => {
+    function finishDrawing() {
         if (!isDrawingMask) return;
         isDrawingMask = false;
         const w = currentX - startX, h = currentY - startY;
         if (Math.abs(w) > 5 && Math.abs(h) > 5) {
-            tempOverlays.push({ x: Math.round(w < 0 ? currentX : startX), y: Math.round(h < 0 ? currentY : startY), w: Math.round(Math.abs(w)), h: Math.round(Math.abs(h)) });
+            tempOverlays.push({ 
+                x: Math.round(w < 0 ? currentX : startX), 
+                y: Math.round(h < 0 ? currentY : startY), 
+                w: Math.round(Math.abs(w)), 
+                h: Math.round(Math.abs(h)) 
+            });
         }
         redrawMaskCanvas();
-    });
+    }
+
+    window.addEventListener('mouseup', finishDrawing);
 
     maskCanvas.addEventListener('touchstart', (e) => { 
         if (e.target === maskCanvas) e.preventDefault(); 
@@ -651,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isDrawingMask = true; 
     }, {passive: false});
     maskCanvas.addEventListener('touchmove', (e) => { if (isDrawingMask) { if (e.target === maskCanvas) e.preventDefault(); const p = getMousePos(e); currentX = p.x; currentY = p.y; redrawMaskCanvas(); } }, {passive: false});
-    window.addEventListener('touchend', () => { if (isDrawingMask) { isDrawingMask = false; redrawMaskCanvas(); } });
+    window.addEventListener('touchend', finishDrawing);
 
     clearMasksBtn.addEventListener('click', () => { tempOverlays = []; redrawMaskCanvas(); });
     
