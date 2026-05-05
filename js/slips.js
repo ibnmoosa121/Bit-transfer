@@ -1,4 +1,63 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const APP_URL = window.location.origin;
+
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://pjbcoagmqiimadfzupmc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_CLyMUTRwiH_jdwJzHJ-AAg_y_OedlRh';
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    // --- IndexedDB Local Storage Logic ---
+    const DB_NAME = 'BitTransferDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'templates';
+
+    const initDB = () => {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    };
+
+    const saveLocalTemplate = async (template) => {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(template);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    };
+
+    const getLocalTemplates = async () => {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    };
+
+    const deleteLocalTemplate = async (id) => {
+        const db = await initDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    };
+
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const clearAllBtn = document.getElementById('clear-all-btn');
@@ -9,6 +68,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const featureSelector = document.getElementById('feature-selector');
     const configureMaskBtn = document.getElementById('configure-mask-btn');
     const maskConfigContainer = document.getElementById('mask-config-container');
+    
+    const libraryContainer = document.getElementById('library-container');
+
+    const uploadFinalBtn = document.getElementById('upload-final-btn');
+    const finalTemplateInput = document.getElementById('final-template-input');
+
+    const maskAllBtn = document.getElementById('mask-all-btn');
+    const saveAsTemplateBtn = document.getElementById('save-as-template-btn');
+    const copyRefBtn = document.getElementById('copy-ref-btn');
+    const downloadRefBtn = document.getElementById('download-ref-btn');
+    const imageDims = document.getElementById('image-dims');
+    const editorModeText = document.getElementById('editor-mode-text');
+    const editorSubtext = document.getElementById('editor-subtext');
+
     const maskCanvas = document.getElementById('mask-canvas');
     const clearMasksBtn = document.getElementById('clear-masks-btn');
     const saveMasksBtn = document.getElementById('save-masks-btn');
@@ -16,16 +89,131 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const emptyState = document.getElementById('empty-state');
     
-    let currentMode = 'mask'; // 'mask' or 'template'
+    let currentMode = 'template'; // 'mask' or 'template'
     let imagesData = []; // Store image objects: { id, file, originalImg, imgElement }
     let refImage = null; // Always the first slip for session
     let overlays = [];
     let tempOverlays = [];
     let isDrawingMask = false;
     let startX = 0, startY = 0, currentX = 0, currentY = 0;
+    let isEditingReference = false;
+    let referenceToEdit = null;
     
-    // Shared template image object
-    let fixedTemplateImg = null;
+    // Multi-template system
+    let templates = [];
+    let selectedTemplateIndex = -1;
+
+    // Load templates from Supabase AND Local Storage
+    const loadAllTemplates = async () => {
+        let allTemplates = [];
+
+        // 1. Load Local Templates
+        try {
+            const localData = await getLocalTemplates();
+            if (localData && localData.length > 0) {
+                const processedLocal = await Promise.all(localData.map(async (item) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => resolve({ image: img, name: item.name, id: item.id, isLocal: true });
+                        img.onerror = () => resolve(null);
+                        img.src = item.image_data; // This is a data URL or Blob
+                    });
+                }));
+                allTemplates = [...allTemplates, ...processedLocal.filter(t => t !== null)];
+            }
+        } catch (err) {
+            console.error('Error loading local templates:', err);
+        }
+
+        // 2. Load Cloud Templates
+        if (supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('templates')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const cloudTemplates = await Promise.all(data.map(async (item) => {
+                        // Avoid duplicates if already in local (by name or ID if shared)
+                        if (allTemplates.some(t => t.id === item.id)) return null;
+
+                        return new Promise((resolve) => {
+                            const img = new Image();
+                            img.crossOrigin = "anonymous";
+                            img.onload = () => resolve({ image: img, name: item.name, id: item.id, isLocal: false });
+                            img.onerror = () => resolve(null);
+                            img.src = item.image_url;
+                        });
+                    }));
+                    allTemplates = [...allTemplates, ...cloudTemplates.filter(t => t !== null)];
+                }
+            } catch (err) {
+                console.error('Error loading cloud templates:', err);
+                showToast('Failed to load cloud templates.');
+            }
+        }
+
+        templates = allTemplates;
+        if (selectedTemplateIndex === -1 && templates.length > 0) {
+            selectedTemplateIndex = 0;
+        }
+        renderLibrary();
+    };
+
+    // Load initial template
+    const initDefaultTemplate = () => {
+        const img = new Image();
+        img.onload = () => {
+            // Only add default if library is empty
+            if (templates.length === 0) {
+                templates.push({ image: img, name: 'Default', isLocal: true });
+                selectedTemplateIndex = 0;
+                renderLibrary();
+            }
+            loadAllTemplates(); // Load local + cloud after default
+        };
+        img.src = 'img/template.png';
+    };
+    initDefaultTemplate();
+
+    const uploadToSupabase = async (blob, name, dimensions) => {
+        if (!supabase) {
+            showToast('Supabase not initialized.');
+            return null;
+        }
+
+        try {
+            const fileName = `${Date.now()}-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('template-images')
+                .upload(fileName, blob, { contentType: 'image/png' });
+
+            if (uploadError) throw uploadError;
+
+            const { data: urlData } = supabase.storage
+                .from('template-images')
+                .getPublicUrl(fileName);
+
+            const { data: dbData, error: dbError } = await supabase
+                .from('templates')
+                .insert([{
+                    name: name,
+                    image_url: urlData.publicUrl,
+                    dimensions: dimensions
+                }])
+                .select();
+
+            if (dbError) throw dbError;
+            return { image_url: urlData.publicUrl, id: dbData[0].id };
+        } catch (err) {
+            console.error('Supabase error:', err);
+            showToast(`Upload failed: ${err.message}`);
+            return null;
+        }
+    };
 
     // Load saved masks
     const savedMasks = localStorage.getItem('saved_slip_masks');
@@ -37,10 +225,48 @@ document.addEventListener('DOMContentLoaded', () => {
     if (featureSelector) {
         featureSelector.addEventListener('change', (e) => {
             currentMode = e.target.value;
+            toggleModeUI();
             // Re-process all images when mode changes
             if (imagesData.length > 0) {
                 imagesData.forEach(data => processImageFile(data.file, data.id));
             }
+        });
+    }
+
+    function toggleModeUI() {
+        if (currentMode === 'template') {
+            uploadFinalBtn.classList.remove('hidden');
+            libraryContainer.classList.remove('hidden');
+        } else {
+            uploadFinalBtn.classList.add('hidden');
+            libraryContainer.classList.add('hidden');
+        }
+    }
+
+    // Initial UI Setup
+    toggleModeUI();
+
+    function renderLibrary() {
+        if (!libraryContainer) return;
+        libraryContainer.innerHTML = '';
+        templates.forEach((t, idx) => {
+            const item = document.createElement('div');
+            item.className = `library-item ${idx === selectedTemplateIndex ? 'active' : ''}`;
+            item.title = t.name;
+            item.innerHTML = `
+                <img src="${t.image.src}" alt="${t.name}">
+                <div class="template-label">${t.name}</div>
+                ${t.isLocal ? '<div class="local-badge"><i class="fas fa-hdd"></i></div>' : '<div class="cloud-badge"><i class="fas fa-cloud"></i></div>'}
+            `;
+            item.onclick = () => {
+                selectedTemplateIndex = idx;
+                renderLibrary();
+                if (imagesData.length > 0) {
+                    imagesData.forEach(d => processImageFile(d.file, d.id));
+                }
+                showToast(`Template "${t.name}" selected`);
+            };
+            libraryContainer.appendChild(item);
         });
     }
 
@@ -105,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         ctx.drawImage(tImg, 0, 0);
 
                         // 2. Harvest areas from SLIP and place on TEMPLATE
-                        // Ratios to match coordinates if sizes differ
                         const ratioX = tImg.width / originalImg.width;
                         const ratioY = tImg.height / originalImg.height;
 
@@ -119,11 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         finishProcessing(canvas, file, originalImg, existingId);
                     };
 
-                    if (fixedTemplateImg) useTemplate(fixedTemplateImg);
-                    else {
-                        const img = new Image();
-                        img.onload = () => { fixedTemplateImg = img; useTemplate(img); };
-                        img.src = 'img/template.png';
+                    if (selectedTemplateIndex >= 0 && templates[selectedTemplateIndex]) {
+                        useTemplate(templates[selectedTemplateIndex].image);
+                    } else {
+                        // Fallback or wait for template
+                        showToast('Please select or add a template first.');
                     }
                 } else {
                     // --- MODE: WATERMARK REMOVAL ---
@@ -214,30 +439,153 @@ document.addEventListener('DOMContentLoaded', () => {
             // Always use the first slip as the reference for marking areas
             if (!refImage && imagesData.length > 0) refImage = imagesData[0].originalImg;
 
-            if (!refImage) { alert('Upload a slip first to mark areas.'); return; }
+            if (!refImage) { alert('Upload an image first to mark areas.'); return; }
             openConfigurator();
         });
     }
 
-    function openConfigurator() {
-        tempOverlays = [...overlays];
+    if (uploadFinalBtn) {
+        uploadFinalBtn.addEventListener('click', () => finalTemplateInput.click());
+    }
+
+    if (finalTemplateInput) {
+        finalTemplateInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const name = prompt('Enter a name for this template:', `Template ${templates.length + 1}`) || `Template ${templates.length + 1}`;
+                        const templateId = 'local-' + Date.now();
+
+                        // 1. Save Locally (Instant)
+                        showToast('Saving to browser storage...');
+                        await saveLocalTemplate({
+                            id: templateId,
+                            name: name,
+                            image_data: event.target.result,
+                            created_at: new Date().toISOString()
+                        });
+
+                        // 2. Add to UI immediately
+                        templates.unshift({ image: img, name: name, id: templateId, isLocal: true });
+                        selectedTemplateIndex = 0;
+                        renderLibrary();
+                        if (imagesData.length > 0) {
+                            imagesData.forEach(d => processImageFile(d.file, d.id));
+                        }
+                        
+                        // 3. Try Supabase (Background)
+                        if (supabase) {
+                            const response = await fetch(event.target.result);
+                            const blob = await response.blob();
+                            const cloudRes = await uploadToSupabase(blob, name, { w: img.width, h: img.height });
+                            if (cloudRes) {
+                                showToast(`"${name}" also synced to cloud!`);
+                            }
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            finalTemplateInput.value = '';
+        });
+    }
+
+    if (maskAllBtn) {
+        maskAllBtn.addEventListener('click', () => {
+            const img = isEditingReference ? referenceToEdit : refImage;
+            if (!img) return;
+            tempOverlays = [{ x: 0, y: 0, w: img.width, h: img.height }];
+            redrawMaskCanvas();
+        });
+    }
+
+    if (saveAsTemplateBtn) {
+        saveAsTemplateBtn.addEventListener('click', () => {
+            const img = isEditingReference ? referenceToEdit : refImage;
+            if (!img) return;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            ctx.fillStyle = '#ffffff';
+            tempOverlays.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+            
+            const resultImg = new Image();
+            resultImg.onload = () => {
+                templates.push(resultImg);
+                selectedTemplateIndex = templates.length - 1;
+                renderLibrary();
+                if (imagesData.length > 0) {
+                    imagesData.forEach(d => processImageFile(d.file, d.id));
+                }
+                showToast('Image saved as template background!');
+                currentStep = 3;
+                updateWorkflowUI();
+            };
+            resultImg.src = canvas.toDataURL('image/png');
+        });
+    }
+
+    function openConfigurator(img = null, forReference = false) {
+        isEditingReference = forReference;
+        if (forReference && img) referenceToEdit = img;
+        const targetImg = isEditingReference ? referenceToEdit : refImage;
+        
+        if (!targetImg) { alert('No image to configure.'); return; }
+        
+        tempOverlays = forReference ? [] : [...overlays];
+        
+        // Update UI for mode
+        if (forReference) {
+            editorModeText.textContent = 'Prepare Reference Template';
+            editorSubtext.textContent = 'Mask areas you want to hide in the template';
+        } else {
+            editorModeText.textContent = 'Mark Areas to Cover';
+            editorSubtext.textContent = 'Drag on image to mark areas for white boxes';
+        }
+
+        copyRefBtn.classList.add('hidden');
+        downloadRefBtn.classList.add('hidden');
+        
+        maskAllBtn.classList.remove('hidden');
+        if (currentMode === 'template') saveAsTemplateBtn.classList.remove('hidden');
+        else saveAsTemplateBtn.classList.add('hidden');
+
+        const maskAllSpan = maskAllBtn.querySelector('span');
+        if (maskAllSpan) maskAllSpan.textContent = `Mask Full (${targetImg.width}x${targetImg.height})`;
+
         maskConfigContainer.classList.remove('hidden');
         resultContainer.classList.add('hidden');
         if (emptyState) emptyState.classList.add('hidden');
+        
+        // Set dims
+        if (imageDims) imageDims.textContent = `${targetImg.width} × ${targetImg.height} px`;
+        
         redrawMaskCanvas();
         maskConfigContainer.scrollIntoView({ behavior: 'smooth' });
     }
 
-    if (cancelMaskBtn) cancelMaskBtn.addEventListener('click', () => { maskConfigContainer.classList.add('hidden'); renderPreviews(); });
+    if (cancelMaskBtn) cancelMaskBtn.addEventListener('click', () => { 
+        maskConfigContainer.classList.add('hidden'); 
+        isEditingReference = false;
+        renderPreviews(); 
+    });
 
     function redrawMaskCanvas() {
-        if (!refImage) return;
-        const scale = (maskConfigContainer.offsetWidth - 60) / refImage.width;
-        maskCanvas.width = refImage.width * scale;
-        maskCanvas.height = refImage.height * scale;
+        const img = isEditingReference ? referenceToEdit : refImage;
+        if (!img) return;
+        
+        const scale = (maskConfigContainer.offsetWidth - 60) / img.width;
+        maskCanvas.width = img.width * scale;
+        maskCanvas.height = img.height * scale;
         maskCanvas.dataset.scale = scale;
         maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-        maskCtx.drawImage(refImage, 0, 0, maskCanvas.width, maskCanvas.height);
+        maskCtx.drawImage(img, 0, 0, maskCanvas.width, maskCanvas.height);
         
         maskCtx.fillStyle = 'rgba(239, 68, 68, 0.4)';
         maskCtx.strokeStyle = '#ef4444';
@@ -264,8 +612,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x: (clientX - rect.left) * (maskCanvas.width / rect.width) / scale, y: (clientY - rect.top) * (maskCanvas.height / rect.height) / scale };
     }
 
-    maskCanvas.addEventListener('mousedown', (e) => { if (!refImage) return; const p = getMousePos(e); startX = p.x; startY = p.y; isDrawingMask = true; });
-    maskCanvas.addEventListener('mousemove', (e) => { if (!isDrawingMask) return; const p = getMousePos(e); currentX = p.x; currentY = p.y; redrawMaskCanvas(); });
+    maskCanvas.addEventListener('mousedown', (e) => { 
+        const img = isEditingReference ? referenceToEdit : refImage;
+        if (!img) return; 
+        const p = getMousePos(e); 
+        startX = p.x; startY = p.y; 
+        currentX = p.x; currentY = p.y;
+        isDrawingMask = true; 
+    });
+    maskCanvas.addEventListener('mousemove', (e) => { 
+        if (!isDrawingMask) return; 
+        const p = getMousePos(e); 
+        currentX = p.x; currentY = p.y; 
+        redrawMaskCanvas(); 
+    });
     window.addEventListener('mouseup', () => {
         if (!isDrawingMask) return;
         isDrawingMask = false;
@@ -276,17 +636,120 @@ document.addEventListener('DOMContentLoaded', () => {
         redrawMaskCanvas();
     });
 
-    maskCanvas.addEventListener('touchstart', (e) => { if (e.target === maskCanvas) e.preventDefault(); const p = getMousePos(e); startX = p.x; startY = p.y; isDrawingMask = true; }, {passive: false});
+    maskCanvas.addEventListener('touchstart', (e) => { 
+        if (e.target === maskCanvas) e.preventDefault(); 
+        const img = (isEditingReference ? referenceToEdit : refImage); 
+        if(!img) return; 
+        const p = getMousePos(e); 
+        startX = p.x; startY = p.y; 
+        currentX = p.x; currentY = p.y;
+        isDrawingMask = true; 
+    }, {passive: false});
     maskCanvas.addEventListener('touchmove', (e) => { if (isDrawingMask) { if (e.target === maskCanvas) e.preventDefault(); const p = getMousePos(e); currentX = p.x; currentY = p.y; redrawMaskCanvas(); } }, {passive: false});
     window.addEventListener('touchend', () => { if (isDrawingMask) { isDrawingMask = false; redrawMaskCanvas(); } });
 
     clearMasksBtn.addEventListener('click', () => { tempOverlays = []; redrawMaskCanvas(); });
+    
     saveMasksBtn.addEventListener('click', () => {
-        overlays = [...tempOverlays];
-        localStorage.setItem('saved_slip_masks', JSON.stringify(overlays));
-        maskConfigContainer.classList.add('hidden');
-        if (imagesData.length > 0) imagesData.forEach(d => processImageFile(d.file, d.id));
-        showToast('Configuration applied!');
+        if (isEditingReference) {
+            // Apply masks to reference image to create the template
+            const canvas = document.createElement('canvas');
+            canvas.width = referenceToEdit.width; canvas.height = referenceToEdit.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(referenceToEdit, 0, 0);
+            ctx.fillStyle = '#ffffff';
+            tempOverlays.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+            
+            const resultImg = new Image();
+            resultImg.onload = async () => {
+                const name = prompt('Enter a name for this template:', `Template ${templates.length + 1}`) || `Template ${templates.length + 1}`;
+                const templateId = 'local-' + Date.now();
+                const dataUrl = canvas.toDataURL('image/png');
+
+                // 1. Save Locally
+                showToast('Saving locally...');
+                await saveLocalTemplate({
+                    id: templateId,
+                    name: name,
+                    image_data: dataUrl,
+                    created_at: new Date().toISOString()
+                });
+
+                // 2. Update UI
+                templates.unshift({ image: resultImg, name: name, id: templateId, isLocal: true });
+                selectedTemplateIndex = 0;
+                renderLibrary();
+                
+                if (imagesData.length > 0) {
+                    imagesData.forEach(d => processImageFile(d.file, d.id));
+                }
+
+                // 3. Try Cloud Sync
+                if (supabase) {
+                    canvas.toBlob(async (blob) => {
+                        const cloudRes = await uploadToSupabase(blob, name, { w: resultImg.width, h: resultImg.height });
+                        if (cloudRes) showToast(`"${name}" saved & synced!`);
+                    }, 'image/png');
+                }
+
+                // Show download/copy buttons for the prepared reference
+                copyRefBtn.classList.remove('hidden');
+                downloadRefBtn.classList.remove('hidden');
+                // ... (rest of the download/copy logic remains same)
+                downloadRefBtn.onclick = () => {
+                    const link = document.createElement('a');
+                    link.download = `${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                };
+                
+                copyRefBtn.onclick = async () => {
+                    canvas.toBlob(async (blob) => {
+                        try {
+                            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                            showToast('Template copied! Now upload back in Step 2.');
+                        } catch (err) { showToast('Copy failed.'); }
+                    });
+                };
+            };
+            resultImg.src = canvas.toDataURL('image/png');
+            
+            showToast('Template ready for download.');
+        } else {
+            overlays = [...tempOverlays];
+            localStorage.setItem('saved_slip_masks', JSON.stringify(overlays));
+            
+            // Generate preview for current slip
+            const canvas = document.createElement('canvas');
+            canvas.width = refImage.width; canvas.height = refImage.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(refImage, 0, 0);
+            ctx.fillStyle = '#ffffff';
+            overlays.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+            
+            // Show download/copy buttons for the masked slip
+            copyRefBtn.classList.remove('hidden');
+            downloadRefBtn.classList.remove('hidden');
+            
+            downloadRefBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = 'masked-slip.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            
+            copyRefBtn.onclick = async () => {
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                        showToast('Masked image copied!');
+                    } catch (err) { showToast('Copy failed.'); }
+                });
+            };
+
+            if (imagesData.length > 0) imagesData.forEach(d => processImageFile(d.file, d.id));
+            showToast('Configuration applied to all slips! You can also download this preview.');
+        }
     });
 
     function showToast(m) {

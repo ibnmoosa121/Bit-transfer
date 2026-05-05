@@ -1,1 +1,0 @@
--282 x 8595 is the place for qr code in my template.png.. fetch the utr number from the pasted slip and feed the utr with www.mythought.com/(amount,name, account number, utr number and status) so when a user scans the qr code it takes him to our website which then reads the url and 

@@ -38,15 +38,19 @@
                         <div class="dropdown-wrapper">
                             <select id="feature-selector" class="mode-select-minimal">
                                 <option value="mask">Watermark Removal</option>
-                                <option value="template">Custom Template</option>
+                                <option value="template" selected>Custom Template</option>
                             </select>
                             <i class="fas fa-chevron-down dropdown-icon-minimal"></i>
                         </div>
                     </div>
 
+                    <div class="toolbar-group" id="library-container">
+                        <!-- Templates will be injected here -->
+                    </div>
 
                     <div class="toolbar-group actions-group">
-                        <button id="configure-mask-btn" class="toolbar-btn secondary"><i class="fas fa-vector-square"></i> <span>Mark Areas</span></button>
+                        <button id="configure-mask-btn" class="toolbar-btn secondary" title="Mark areas on image"><i class="fas fa-vector-square"></i> <span>Mark Areas</span></button>
+                        <button id="upload-final-btn" class="toolbar-btn primary hidden" title="Step 2: Add a new finalized template"><i class="fas fa-plus-circle"></i> <span>+ New Template</span></button>
                         <button id="clear-all-btn" class="toolbar-btn danger-minimal" title="Reset Workspace"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </div>
@@ -54,6 +58,8 @@
                 <!-- Main Content Area -->
                 <div class="workbench-body" id="dropzone">
                     <input type="file" id="file-input" multiple accept="image/*" class="hidden-input">
+                    <input type="file" id="ref-input" accept="image/*" class="hidden-input">
+                    <input type="file" id="final-template-input" accept="image/*" class="hidden-input">
                     
                     <!-- Empty State -->
                     <div id="empty-state" class="empty-state-workbench">
@@ -84,12 +90,16 @@
                     <div id="mask-config-container" class="mask-editor hidden">
                         <div class="mask-editor-header">
                             <div class="editor-title">
-                                <h3>Mark Areas to Cover</h3>
-                                <p>Drag on image to mark areas for white boxes</p>
+                                <h3><span id="editor-mode-text">Mark Areas to Cover</span> <span id="image-dims" class="dims-badge"></span></h3>
+                                <p id="editor-subtext">Drag on image to mark areas for white boxes</p>
                             </div>
                             <div class="editor-actions">
+                                <button id="mask-all-btn" class="action-btn secondary-btn hidden" title="Cover entire image"><i class="fas fa-fill-drip"></i> <span>Mask All</span></button>
+                                <button id="save-as-template-btn" class="action-btn success-btn hidden" title="Add this masked image to template library"><i class="fas fa-plus-circle"></i> <span>Save as Template</span></button>
+                                <button id="copy-ref-btn" class="action-btn secondary-btn hidden" title="Copy to clipboard"><i class="fas fa-copy"></i> <span>Copy</span></button>
+                                <button id="download-ref-btn" class="action-btn success-btn hidden" title="Download image"><i class="fas fa-download"></i> <span>Download</span></button>
                                 <button id="clear-masks-btn" class="action-btn danger-minimal"><i class="fas fa-eraser"></i> <span>Clear</span></button>
-                                <button id="save-masks-btn" class="action-btn success-btn"><i class="fas fa-check-circle"></i> <span>Apply Masks</span></button>
+                                <button id="save-masks-btn" class="action-btn success-btn"><i class="fas fa-check-circle"></i> <span>Apply</span></button>
                                 <button id="cancel-mask-btn" class="action-btn secondary-btn"><span>Cancel</span></button>
                             </div>
                         </div>
@@ -102,6 +112,8 @@
         </main>
     </div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/slips.js?v=11"></script>
 </body>
 
