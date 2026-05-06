@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelMaskBtn = document.getElementById('cancel-mask-btn');
 
     const emptyState = document.getElementById('empty-state');
+    const emptyWelcome = document.getElementById('empty-welcome');
     
     let currentMode = 'template'; // 'mask' or 'template'
     let imagesData = []; // Store image objects: { id, file, originalImg, imgElement }
@@ -463,11 +464,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreviews() {
         if (imagesData.length > 0) {
-            if (emptyState) emptyState.classList.add('hidden');
+            if (emptyWelcome) emptyWelcome.classList.add('hidden');
+            if (emptyState) emptyState.classList.add('has-content');
             if (maskConfigContainer.classList.contains('hidden')) resultContainer.classList.remove('hidden');
             generateCollage(true);
         } else {
-            if (emptyState) emptyState.classList.remove('hidden');
+            if (emptyWelcome) emptyWelcome.classList.remove('hidden');
+            if (emptyState) emptyState.classList.remove('has-content');
             resultContainer.classList.add('hidden');
         }
     }

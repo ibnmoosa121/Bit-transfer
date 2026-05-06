@@ -574,9 +574,26 @@ header h1 i {
 .empty-state-workbench {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.empty-state-workbench.has-content {
+    flex: 0 0 auto;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-light);
+    backdrop-filter: blur(10px);
+}
+
+.empty-state-workbench.has-content .empty-actions {
+    margin-top: 0;
+    width: 100%;
 }
 
 .upload-icon-big {
@@ -794,6 +811,26 @@ canvas {
 
     .empty-content h2 { font-size: 1.5rem; }
     .empty-content p { font-size: 0.9rem; }
+
+    .empty-state-workbench.has-content {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.6);
+    }
+
+    .empty-state-workbench.has-content .empty-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .empty-state-workbench.has-content .browse-btn {
+        width: 100%;
+        padding: 0.6rem;
+        font-size: 0.85rem;
+        justify-content: center;
+        display: flex;
+    }
     
     .result-display-header, .mask-editor-header {
         flex-direction: column;
