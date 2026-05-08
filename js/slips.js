@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const APP_URL = window.location.origin;
 
-    // Supabase Configuration
-    const SUPABASE_URL = 'https://pjbcoagmqiimadfzupmc.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_CLyMUTRwiH_jdwJzHJ-AAg_y_OedlRh';
-    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
 
     // --- IndexedDB Local Storage Logic ---
     const DB_NAME = 'BitTransferDB';
@@ -65,15 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const collageCanvas = document.getElementById('collage-canvas');
     const downloadBtn = document.getElementById('download-btn');
     
-    const featureSelector = document.getElementById('feature-selector');
     const configureMaskBtn = document.getElementById('configure-mask-btn');
     const maskConfigContainer = document.getElementById('mask-config-container');
     
-    const libraryContainer = document.getElementById('library-container');
-    const templateTrigger = document.getElementById('template-trigger');
-    const templateDropdown = document.getElementById('template-dropdown');
-    const selectedTemplateName = document.getElementById('selected-template-name');
-    const selectedTemplateImg = document.getElementById('selected-template-img');
+    const dynamicTemplatesContainer = document.getElementById('dynamic-templates-container');
+    const modeBtnEraser = document.querySelector('.mode-btn[data-mode="mask"]');
 
     const uploadFinalBtn = document.getElementById('upload-final-btn');
     const finalTemplateInput = document.getElementById('final-template-input');
@@ -108,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let templates = [];
     let selectedTemplateIndex = -1;
 
-    // Load templates from Supabase AND Local Storage
+    // Load templates from Local Storage
     const loadAllTemplates = async () => {
         let allTemplates = [];
 
@@ -130,37 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error loading local templates:', err);
         }
 
-        // 2. Load Cloud Templates
-        if (supabase) {
-            try {
-                const { data, error } = await supabase
-                    .from('templates')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    const cloudTemplates = await Promise.all(data.map(async (item) => {
-                        // Avoid duplicates if already in local (by name or ID if shared)
-                        if (allTemplates.some(t => t.id === item.id)) return null;
-
-                        return new Promise((resolve) => {
-                            const img = new Image();
-                            img.crossOrigin = "anonymous";
-                            img.onload = () => resolve({ image: img, name: item.name, id: item.id, isLocal: false });
-                            img.onerror = () => resolve(null);
-                            img.src = item.image_url;
-                        });
-                    }));
-                    allTemplates = [...allTemplates, ...cloudTemplates.filter(t => t !== null)];
-                }
-            } catch (err) {
-                console.error('Error loading cloud templates:', err);
-                showToast('Failed to load cloud templates.');
-            }
-        }
-
         // Preserve default if it exists and isn't already in the list
         const defaultT = templates.find(t => t.name === 'Default');
         if (defaultT && !allTemplates.some(t => t.name === 'Default')) {
@@ -179,10 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedTemplateIndex < 0 || selectedTemplateIndex >= templates.length) {
                 selectedTemplateIndex = 0;
             }
-            // Update the trigger UI immediately
-            const t = templates[selectedTemplateIndex];
-            if (selectedTemplateName) selectedTemplateName.textContent = t.name;
-            if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
         } else {
             selectedTemplateIndex = -1;
         }
@@ -206,41 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     initDefaultTemplate();
 
-    const uploadToSupabase = async (blob, name, dimensions) => {
-        if (!supabase) {
-            showToast('Supabase not initialized.');
-            return null;
-        }
 
-        try {
-            const fileName = `${Date.now()}-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('template-images')
-                .upload(fileName, blob, { contentType: 'image/png' });
-
-            if (uploadError) throw uploadError;
-
-            const { data: urlData } = supabase.storage
-                .from('template-images')
-                .getPublicUrl(fileName);
-
-            const { data: dbData, error: dbError } = await supabase
-                .from('templates')
-                .insert([{
-                    name: name,
-                    image_url: urlData.publicUrl,
-                    dimensions: dimensions
-                }])
-                .select();
-
-            if (dbError) throw dbError;
-            return { image_url: urlData.publicUrl, id: dbData[0].id };
-        } catch (err) {
-            console.error('Supabase error:', err);
-            showToast(`Upload failed: ${err.message}`);
-            return null;
-        }
-    };
 
     // Load saved masks
     const savedMasks = localStorage.getItem('saved_slip_masks');
@@ -249,106 +173,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Toolbar Actions ---
-    if (featureSelector) {
-        featureSelector.addEventListener('change', (e) => {
-            currentMode = e.target.value;
-            toggleModeUI();
-            // Re-process all images when mode changes
+    if (modeBtnEraser) {
+        modeBtnEraser.addEventListener('click', () => {
+            currentMode = 'mask';
+            renderLibrary();
             if (imagesData.length > 0) {
                 imagesData.forEach(data => processImageFile(data.file, data.id));
             }
         });
     }
 
-    function toggleModeUI() {
-        if (currentMode === 'template') {
-            uploadFinalBtn.classList.remove('hidden');
-            libraryContainer.classList.remove('hidden');
-        } else {
-            uploadFinalBtn.classList.add('hidden');
-            libraryContainer.classList.add('hidden');
-        }
-    }
-
-    // Initial UI Setup
-    toggleModeUI();
-
-    // Toggle Dropdown
-    if (templateTrigger) {
-        templateTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            templateDropdown.classList.toggle('active');
-        });
-    }
-
-    document.addEventListener('click', () => {
-        if (templateDropdown) templateDropdown.classList.remove('active');
-    });
-
     function renderLibrary() {
-        if (!libraryContainer) return;
-        libraryContainer.innerHTML = '';
+        if (!dynamicTemplatesContainer) return;
+        dynamicTemplatesContainer.innerHTML = '';
+
+        if (modeBtnEraser) {
+            if (currentMode === 'mask') {
+                modeBtnEraser.classList.add('active');
+            } else {
+                modeBtnEraser.classList.remove('active');
+            }
+        }
+
         templates.forEach((t, idx) => {
             const item = document.createElement('div');
-            item.className = `library-item ${idx === selectedTemplateIndex ? 'active' : ''}`;
+            const isActive = (currentMode === 'template' && idx === selectedTemplateIndex);
+            item.className = `effect-item ${isActive ? 'active' : ''}`;
             item.title = t.name;
             item.innerHTML = `
-                <img src="${t.image.src}" alt="${t.name}">
-                <div class="template-label">${t.name}</div>
-                ${t.isLocal ? '<div class="local-badge"><i class="fas fa-hdd"></i></div>' : '<div class="cloud-badge"><i class="fas fa-cloud"></i></div>'}
-                <button class="delete-template-btn" title="Delete Template"><i class="fas fa-times"></i></button>
+                <div class="effect-thumbnail">
+                    <img src="${t.image.src}" alt="${t.name}">
+                    ${idx !== 0 ? '<div class="local-badge"><i class="fas fa-hdd"></i></div>' : ''}
+                </div>
+                <span class="effect-label">${t.name}</span>
+                ${idx !== 0 ? '<button class="delete-template-btn" title="Delete Template"><i class="fas fa-times"></i></button>' : ''}
             `;
-            
-            if (idx === selectedTemplateIndex) {
-                if (selectedTemplateName) selectedTemplateName.textContent = t.name;
-                if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
-            }
 
             // Delete Logic
             const deleteBtn = item.querySelector('.delete-template-btn');
-            deleteBtn.onclick = async (e) => {
-                e.stopPropagation();
-                if (!confirm(`Are you sure you want to delete "${t.name}"?`)) return;
+            if (deleteBtn) {
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`Are you sure you want to delete "${t.name}"?`)) return;
 
-                try {
-                    if (t.isLocal) {
+                    try {
                         await deleteLocalTemplate(t.id);
-                    } else if (supabase) {
-                        const { error } = await supabase.from('templates').delete().eq('id', t.id);
-                        if (error) throw error;
+                        
+                        templates.splice(idx, 1);
+                        if (selectedTemplateIndex === idx) {
+                            selectedTemplateIndex = templates.length > 0 ? 0 : -1;
+                        } else if (selectedTemplateIndex > idx) {
+                            selectedTemplateIndex--;
+                        }
+                        
+                        renderLibrary();
+                        if (imagesData.length > 0) {
+                            imagesData.forEach(d => processImageFile(d.file, d.id));
+                        }
+                        showToast(`"${t.name}" deleted.`);
+                    } catch (err) {
+                        console.error('Delete error:', err);
+                        showToast('Failed to delete template.');
                     }
-                    
-                    templates.splice(idx, 1);
-                    if (selectedTemplateIndex === idx) {
-                        selectedTemplateIndex = templates.length > 0 ? 0 : -1;
-                    } else if (selectedTemplateIndex > idx) {
-                        selectedTemplateIndex--;
-                    }
-                    
-                    renderLibrary();
-                    if (imagesData.length > 0) {
-                        imagesData.forEach(d => processImageFile(d.file, d.id));
-                    }
-                    showToast(`"${t.name}" deleted.`);
-                } catch (err) {
-                    console.error('Delete error:', err);
-                    showToast('Failed to delete template.');
-                }
-            };
+                };
+            }
 
             item.onclick = () => {
+                currentMode = 'template';
                 selectedTemplateIndex = idx;
-                if (selectedTemplateName) selectedTemplateName.textContent = t.name;
-                if (selectedTemplateImg) selectedTemplateImg.src = t.image.src;
                 
                 renderLibrary();
                 if (imagesData.length > 0) {
                     imagesData.forEach(d => processImageFile(d.file, d.id));
                 }
-                showToast(`Template "${t.name}" selected`);
-                if (templateDropdown) templateDropdown.classList.remove('active');
+                showToast(`Template "${t.name}" applied`);
             };
-            libraryContainer.appendChild(item);
+            dynamicTemplatesContainer.appendChild(item);
         });
     }
 
@@ -564,15 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             imagesData.forEach(d => processImageFile(d.file, d.id));
                         }
                         
-                        // 3. Try Supabase (Background)
-                        if (supabase) {
-                            const response = await fetch(event.target.result);
-                            const blob = await response.blob();
-                            const cloudRes = await uploadToSupabase(blob, name, { w: img.width, h: img.height });
-                            if (cloudRes) {
-                                showToast(`"${name}" also synced to cloud!`);
-                            }
-                        }
+
                     };
                     img.src = event.target.result;
                 };
@@ -750,71 +642,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     imagesData.forEach(d => processImageFile(d.file, d.id));
                 }
 
-                // 3. Try Cloud Sync
-                if (supabase) {
-                    canvas.toBlob(async (blob) => {
-                        const cloudRes = await uploadToSupabase(blob, name, { w: resultImg.width, h: resultImg.height });
-                        if (cloudRes) showToast(`"${name}" saved & synced!`);
-                    }, 'image/png');
-                }
 
-                // Show download/copy buttons for the prepared reference
-                copyRefBtn.classList.remove('hidden');
-                downloadRefBtn.classList.remove('hidden');
-                // ... (rest of the download/copy logic remains same)
-                downloadRefBtn.onclick = () => {
-                    const link = document.createElement('a');
-                    link.download = `${name.replace(/\s+/g, '-').toLowerCase()}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                };
-                
-                copyRefBtn.onclick = async () => {
-                    canvas.toBlob(async (blob) => {
-                        try {
-                            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                            showToast('Template copied! Now upload back in Step 2.');
-                        } catch (err) { showToast('Copy failed.'); }
-                    });
-                };
+
             };
             resultImg.src = canvas.toDataURL('image/png');
             
-            showToast('Template ready for download.');
+            maskConfigContainer.classList.add('hidden');
+            isEditingReference = false;
+            renderPreviews();
+            showToast('Template created and applied!');
         } else {
             overlays = [...tempOverlays];
             localStorage.setItem('saved_slip_masks', JSON.stringify(overlays));
             
-            // Generate preview for current slip
-            const canvas = document.createElement('canvas');
-            canvas.width = refImage.width; canvas.height = refImage.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(refImage, 0, 0);
-            ctx.fillStyle = '#ffffff';
-            overlays.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
-            
-            // Show download/copy buttons for the masked slip
-            copyRefBtn.classList.remove('hidden');
-            downloadRefBtn.classList.remove('hidden');
-            
-            downloadRefBtn.onclick = () => {
-                const link = document.createElement('a');
-                link.download = 'masked-slip.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            };
-            
-            copyRefBtn.onclick = async () => {
-                canvas.toBlob(async (blob) => {
-                    try {
-                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                        showToast('Masked image copied!');
-                    } catch (err) { showToast('Copy failed.'); }
-                });
-            };
-
             if (imagesData.length > 0) imagesData.forEach(d => processImageFile(d.file, d.id));
-            showToast('Configuration applied to all slips! You can also download this preview.');
+            showToast('Mask applied! Collage updated.');
+            
+            maskConfigContainer.classList.add('hidden');
+            isEditingReference = false;
+            renderPreviews();
         }
     });
 

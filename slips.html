@@ -33,35 +33,31 @@
         <main class="workbench-layout">
             <div class="workbench-container fade-in">
                 <!-- Toolbar -->
-                <div class="workbench-toolbar">
-                    <div class="toolbar-group">
-                        <div class="dropdown-wrapper">
-                            <select id="feature-selector" class="mode-select-minimal">
-                                <option value="mask">Watermark Removal</option>
-                                <option value="template" selected>Custom Template</option>
-                            </select>
-                            <i class="fas fa-chevron-down dropdown-icon-minimal"></i>
+                <div class="workbench-toolbar mobile-optimized fade-in">
+                    <!-- Horizontal Scroll List of Modes/Templates -->
+                    <div class="effects-carousel" id="effects-carousel">
+                        <div class="effect-item mode-btn" data-mode="mask" title="Remove Watermarks">
+                            <div class="effect-thumbnail">
+                                <i class="fas fa-eraser"></i>
+                            </div>
+                            <span class="effect-label">Eraser</span>
+                        </div>
+                        
+                        <div class="carousel-divider"></div>
+                        
+                        <!-- Library templates will be injected here -->
+                        <div id="dynamic-templates-container" class="dynamic-templates"></div>
+                        
+                        <div class="effect-item add-new-btn" id="upload-final-btn" title="Add New Template">
+                            <div class="effect-thumbnail">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <span class="effect-label">New</span>
                         </div>
                     </div>
 
-                    <div class="toolbar-group">
-                        <div class="custom-dropdown" id="template-dropdown">
-                            <div class="dropdown-trigger" id="template-trigger">
-                                <div class="selected-info">
-                                    <img id="selected-template-img" src="img/template.png" alt="">
-                                    <span id="selected-template-name">Default Template</span>
-                                </div>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="dropdown-menu" id="library-container">
-                                <!-- Templates will be injected here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="toolbar-group actions-group">
+                    <div class="toolbar-actions">
                         <button id="configure-mask-btn" class="toolbar-btn secondary" title="Mark areas on image"><i class="fas fa-vector-square"></i> <span>Mark Areas</span></button>
-                        <button id="upload-final-btn" class="toolbar-btn primary hidden" title="Step 2: Add a new finalized template"><i class="fas fa-plus-circle"></i> <span>+ New Template</span></button>
                         <button id="clear-all-btn" class="toolbar-btn danger-minimal" title="Reset Workspace"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </div>
@@ -122,8 +118,6 @@
         </main>
     </div>
 
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/slips.js?v=11"></script>
 </body>
 
