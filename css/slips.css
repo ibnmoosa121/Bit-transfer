@@ -686,7 +686,7 @@ header h1 i {
     background: rgba(226, 232, 240, 0.3);
 }
 
-canvas {
+canvas, .collage-preview-img {
     max-width: 100%;
     height: auto !important;
     border-radius: 20px;

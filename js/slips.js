@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearAllBtn = document.getElementById('clear-all-btn');
     const resultContainer = document.getElementById('result-container');
     const collageCanvas = document.getElementById('collage-canvas');
+    const collageImg = document.getElementById('collage-img');
     const downloadBtn = document.getElementById('download-btn');
     
     const configureMaskBtn = document.getElementById('configure-mask-btn');
@@ -436,7 +437,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             curY += rowHeights[rowIdx++];
         }
-        downloadBtn.href = collageCanvas.toDataURL('image/png');
+        const dataUrl = collageCanvas.toDataURL('image/png');
+        downloadBtn.href = dataUrl;
+        if (collageImg) collageImg.src = dataUrl;
     }
 
     // --- Mask Config Logic ---
