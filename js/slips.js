@@ -370,12 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const isConfiguring = !maskConfigContainer.classList.contains('hidden');
         
         if (imagesData.length > 0) {
-            if (emptyWelcome) emptyWelcome.classList.add('hidden');
-            if (emptyState) {
-                emptyState.classList.add('has-content');
-                if (!isConfiguring) emptyState.classList.remove('hidden');
-                else emptyState.classList.add('hidden');
-            }
+            // Hide the empty-state container entirely when we have images,
+            // as the sticky toolbar now provides the primary upload actions.
+            if (emptyState) emptyState.classList.add('hidden');
             
             if (!isConfiguring) {
                 resultContainer.classList.remove('hidden');
@@ -385,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             generateCollage(true);
         } else {
+            // Show the welcome screen when the workspace is empty
             if (emptyWelcome) emptyWelcome.classList.remove('hidden');
             if (emptyState) {
                 emptyState.classList.remove('has-content');
