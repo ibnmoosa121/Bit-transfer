@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const mobilePasteBtn = document.getElementById('mobile-paste-btn');
     const toolbarPasteBtn = document.getElementById('toolbar-paste-btn');
+    const sessionPasteBtn = document.getElementById('session-paste-btn');
 
     const handlePasteAction = async (e) => {
         if (e) e.preventDefault();
@@ -291,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (mobilePasteBtn) mobilePasteBtn.addEventListener('click', handlePasteAction);
     if (toolbarPasteBtn) toolbarPasteBtn.addEventListener('click', handlePasteAction);
+    if (sessionPasteBtn) sessionPasteBtn.addEventListener('click', handlePasteAction);
 
     function handleFiles(files) {
         Array.from(files).forEach(file => {

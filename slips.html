@@ -57,8 +57,6 @@
                     </div>
 
                     <div class="toolbar-actions">
-                        <label for="file-input" class="toolbar-btn secondary" title="Browse Files"><i class="fas fa-file-upload"></i> <span>Browse</span></label>
-                        <button id="toolbar-paste-btn" class="toolbar-btn secondary" title="Paste from Clipboard"><i class="fas fa-paste"></i> <span>Paste</span></button>
                         <button id="configure-mask-btn" class="toolbar-btn secondary" title="Mark areas on image"><i class="fas fa-vector-square"></i> <span>Mark Areas</span></button>
                         <button id="clear-all-btn" class="toolbar-btn danger-minimal" title="Reset Workspace"><i class="fas fa-trash-alt"></i></button>
                     </div>
@@ -75,7 +73,7 @@
                         <div class="empty-content" id="empty-welcome">
                             <i class="fas fa-cloud-upload-alt upload-icon-big"></i>
                             <h2>Ready to start?</h2>
-                            <p>Drag images here or use the toolbar buttons</p>
+                            <p>Drag images here or use the buttons below</p>
                         </div>
                         <div class="empty-actions" id="workbench-actions">
                             <button id="mobile-paste-btn" class="browse-btn"><i class="fas fa-paste"></i> Paste from Clipboard</button>
@@ -86,8 +84,13 @@
                     <!-- Collage Preview -->
                     <div id="result-container" class="result-display hidden">
                         <div class="result-display-header">
-                            <h3>Collage Preview</h3>
-                            <a id="download-btn" class="action-btn success-btn" download="slips-collage.png"><i class="fas fa-download"></i> Download PNG</a>
+                            <div class="header-controls">
+                                <label for="file-input" class="control-btn"><i class="fas fa-plus-circle"></i> <span>Add Slips</span></label>
+                                <button id="session-paste-btn" class="control-btn"><i class="fas fa-paste"></i> <span>Paste</span></button>
+                            </div>
+                            <div class="header-actions">
+                                <a id="download-btn" class="action-btn success-btn" download="slips-collage.png"><i class="fas fa-download"></i> <span>Download PNG</span></a>
+                            </div>
                         </div>
                         <div class="canvas-viewport">
                             <canvas id="collage-canvas"></canvas>
