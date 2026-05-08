@@ -112,7 +112,7 @@ header h1 i {
     border: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow sticky to work correctly */
     position: relative;
 }
 
@@ -612,7 +612,15 @@ header h1 i {
     align-items: center;
 }
 
-.result-display-header, .mask-editor-header {
+.result-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+}
+
+.mask-editor-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -695,7 +703,31 @@ canvas {
     .empty-content h2 { font-size: 1.5rem; }
     .empty-content p { font-size: 0.9rem; }
 
-    .result-display-header, .mask-editor-header {
+    .result-display {
+        padding-top: 1rem;
+    }
+
+    .result-display-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+        padding: 0 0.25rem;
+    }
+
+    .result-display-header h3 {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+
+    .result-display-header .action-btn.success-btn {
+        padding: 1.1rem;
+        justify-content: center;
+        font-size: 1rem;
+        border-radius: 18px;
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+    }
+    
+    .mask-editor-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
