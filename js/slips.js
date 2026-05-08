@@ -269,24 +269,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const mobilePasteBtn = document.getElementById('mobile-paste-btn');
-    if (mobilePasteBtn) {
-        mobilePasteBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-                const clipboardItems = await navigator.clipboard.read();
-                for (const item of clipboardItems) {
-                    for (const type of item.types) {
-                        if (type.startsWith('image/')) {
-                            const blob = await item.getType(type);
-                            handleFiles([blob]);
-                            return;
-                        }
+    const toolbarPasteBtn = document.getElementById('toolbar-paste-btn');
+
+    const handlePasteAction = async (e) => {
+        if (e) e.preventDefault();
+        try {
+            const clipboardItems = await navigator.clipboard.read();
+            for (const item of clipboardItems) {
+                for (const type of item.types) {
+                    if (type.startsWith('image/')) {
+                        const blob = await item.getType(type);
+                        handleFiles([blob]);
+                        showToast('Image pasted from clipboard');
+                        return;
                     }
                 }
-                alert('No image found in clipboard.');
-            } catch (err) { alert('Could not access clipboard. Please use Browse button.'); }
-        });
-    }
+            }
+            alert('No image found in clipboard.');
+        } catch (err) { alert('Could not access clipboard. Please use Browse button.'); }
+    };
+
+    if (mobilePasteBtn) mobilePasteBtn.addEventListener('click', handlePasteAction);
+    if (toolbarPasteBtn) toolbarPasteBtn.addEventListener('click', handlePasteAction);
 
     function handleFiles(files) {
         Array.from(files).forEach(file => {
@@ -363,14 +367,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPreviews() {
+        const isConfiguring = !maskConfigContainer.classList.contains('hidden');
+        
         if (imagesData.length > 0) {
             if (emptyWelcome) emptyWelcome.classList.add('hidden');
-            if (emptyState) emptyState.classList.add('has-content');
-            if (maskConfigContainer.classList.contains('hidden')) resultContainer.classList.remove('hidden');
+            if (emptyState) {
+                emptyState.classList.add('has-content');
+                if (!isConfiguring) emptyState.classList.remove('hidden');
+                else emptyState.classList.add('hidden');
+            }
+            
+            if (!isConfiguring) {
+                resultContainer.classList.remove('hidden');
+            } else {
+                resultContainer.classList.add('hidden');
+            }
+            
             generateCollage(true);
         } else {
             if (emptyWelcome) emptyWelcome.classList.remove('hidden');
-            if (emptyState) emptyState.classList.remove('has-content');
+            if (emptyState) {
+                emptyState.classList.remove('has-content');
+                if (!isConfiguring) emptyState.classList.remove('hidden');
+                else emptyState.classList.add('hidden');
+            }
             resultContainer.classList.add('hidden');
         }
     }
