@@ -35,8 +35,10 @@ nav {
     padding: 1.25rem 2.5rem;
     position: fixed;
     width: calc(100% - 4rem);
+    max-width: 1400px;
     top: 2rem;
-    left: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(15px);
@@ -133,6 +135,7 @@ h1 {
 .gradient-text {
     background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 

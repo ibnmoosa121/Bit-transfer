@@ -56,14 +56,19 @@ header {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    padding: 1.25rem 2.5rem;
     border-bottom: 1px solid var(--glass-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     position: sticky;
     top: 0;
     z-index: 100;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.25rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 header h1 {
@@ -99,6 +104,16 @@ header h1 i {
     display: flex;
     justify-content: center;
     padding: 2rem;
+}
+
+@media (min-width: 1400px) {
+    .workbench-layout {
+        padding: 4rem 2rem;
+    }
+    
+    .workbench-container {
+        max-width: 1200px;
+    }
 }
 
 .workbench-container {
@@ -425,7 +440,6 @@ header h1 i {
     box-shadow: 0 8px 20px -4px rgba(244, 63, 94, 0.3);
 }
 
-@media (max-width: 768px) {
 @media (max-width: 768px) {
     .toolbar-actions {
         width: 100%;
