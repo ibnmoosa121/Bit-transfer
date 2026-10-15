@@ -59,12 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const collageCanvas = document.getElementById('collage-canvas');
     const collageImg = document.getElementById('collage-img');
     const downloadBtn = document.getElementById('download-btn');
-    
-    const configureMaskBtn = document.getElementById('configure-mask-btn');
-    const maskConfigContainer = document.getElementById('mask-config-container');
-    
-    const dynamicTemplatesContainer = document.getElementById('dynamic-templates-container');
-    const modeBtnEraser = document.querySelector('.mode-btn[data-mode="mask"]');
 
     const configureMaskBtn = document.getElementById('configure-mask-btn');
     const configureBtnLabel = document.getElementById('configure-btn-label');
