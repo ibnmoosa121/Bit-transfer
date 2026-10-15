@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bit Transfer | Collage Dashboard</title>
-    <link rel="stylesheet" href="css/slips.css?v=11">
+    <link rel="stylesheet" href="css/slips.css?v=15">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,30 +36,33 @@
             <div class="workbench-container fade-in">
                 <!-- Toolbar -->
                 <div class="workbench-toolbar mobile-optimized fade-in">
-                    <!-- Horizontal Scroll List of Modes/Templates -->
-                    <div class="effects-carousel" id="effects-carousel">
-                        <div class="effect-item mode-btn" data-mode="mask" title="Remove Watermarks">
-                            <div class="effect-thumbnail">
-                                <i class="fas fa-eraser"></i>
+                    <!-- Modes & Templates Carousel Zone -->
+                    <div class="carousel-zone">
+                        <div class="effects-carousel" id="effects-carousel">
+                            <div class="effect-item mode-btn" data-mode="mask" title="Watermark Eraser Tool">
+                                <div class="effect-thumbnail">
+                                    <i class="fas fa-eraser"></i>
+                                    <span class="effect-tool-tag">Tool</span>
+                                </div>
+                                <span class="effect-label">Watermark Eraser</span>
                             </div>
-                            <span class="effect-label">Eraser</span>
-                        </div>
-                        
-                        <div class="carousel-divider"></div>
-                        
-                        <!-- Library templates will be injected here -->
-                        <div id="dynamic-templates-container" class="dynamic-templates"></div>
-                        
-                        <div class="effect-item add-new-btn" id="upload-final-btn" title="Add New Template">
-                            <div class="effect-thumbnail">
-                                <i class="fas fa-plus"></i>
+                            
+                            <div class="carousel-divider"></div>
+                            
+                            <!-- Library templates will be injected here -->
+                            <div id="dynamic-templates-container" class="dynamic-templates"></div>
+                            
+                            <div class="effect-item add-new-btn" id="upload-final-btn" title="Add New Template">
+                                <div class="effect-thumbnail">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <span class="effect-label">New Template</span>
                             </div>
-                            <span class="effect-label">New</span>
                         </div>
                     </div>
 
                     <div class="toolbar-actions">
-                        <button id="configure-mask-btn" class="toolbar-btn secondary" title="Mark areas on image"><i class="fas fa-vector-square"></i> <span>Mark Areas</span></button>
+                        <button id="configure-mask-btn" class="toolbar-btn primary-glow-btn" title="Configure"><i class="fas fa-wand-magic-sparkles"></i> <span id="configure-btn-label">Extract Texts</span></button>
                         <button id="clear-all-btn" class="toolbar-btn danger-minimal" title="Reset Workspace"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </div>
@@ -101,24 +104,87 @@
                         <p class="copy-hint"><i class="fas fa-info-circle"></i> Long press the image to copy</p>
                     </div>
 
-                    <!-- Mask Configurator -->
-                    <div id="mask-config-container" class="mask-editor hidden">
-                        <div class="mask-editor-header">
-                            <div class="editor-title">
-                                <h3><span id="editor-mode-text">Mark Areas to Cover</span> <span id="image-dims" class="dims-badge"></span></h3>
-                                <p id="editor-subtext">Drag on image to mark areas for white boxes</p>
+                    <!-- Mask / Extraction Configurator Studio -->
+                    <div id="mask-config-container" class="mask-editor studio-card hidden">
+                        <!-- Studio Command Header -->
+                        <div class="studio-header">
+                            <!-- Left: Identity & Title -->
+                            <div class="studio-identity">
+                                <div class="studio-icon-badge">
+                                    <i id="studio-mode-icon" class="fas fa-layer-group"></i>
+                                </div>
+                                <div class="studio-meta">
+                                    <div class="studio-title-row">
+                                        <h3 id="editor-mode-text">Extract Texts</h3>
+                                        <span id="image-dims" class="dims-badge">1710 × 1230 px</span>
+                                    </div>
+                                    <span id="editor-subtext" class="studio-subtext">Draw boxes over each text block you want to extract</span>
+                                </div>
                             </div>
-                            <div class="editor-actions">
-                                <button id="mask-all-btn" class="action-btn secondary-btn hidden" title="Cover entire image"><i class="fas fa-fill-drip"></i> <span>Mask All</span></button>
-                                <button id="copy-ref-btn" class="action-btn secondary-btn hidden" title="Copy to clipboard"><i class="fas fa-copy"></i> <span>Copy</span></button>
-                                <button id="download-ref-btn" class="action-btn success-btn hidden" title="Download image"><i class="fas fa-download"></i> <span>Download</span></button>
-                                <button id="clear-masks-btn" class="action-btn danger-minimal"><i class="fas fa-eraser"></i> <span>Clear</span></button>
-                                <button id="save-masks-btn" class="action-btn success-btn"><i class="fas fa-check-circle"></i> <span>Apply</span></button>
-                                <button id="cancel-mask-btn" class="action-btn secondary-btn"><span>Cancel</span></button>
+
+                            <!-- Center: Sleek Segmented Step Switcher (Template Mode Only) -->
+                            <div id="template-steps-bar" class="segmented-steps-bar hidden">
+                                <button id="step-select-btn" class="seg-step-btn active" type="button" title="Step 1: Select text blocks on slip">
+                                    <span class="seg-num">1</span>
+                                    <span class="seg-text">Extract Texts</span>
+                                </button>
+                                <span class="seg-arrow"><i class="fas fa-chevron-right"></i></span>
+                                <button id="step-arrange-btn" class="seg-step-btn" type="button" title="Step 2: Position text blocks on template">
+                                    <span class="seg-num">2</span>
+                                    <span class="seg-text">Position on Template</span>
+                                </button>
+                            </div>
+
+                            <!-- Right: Studio Controls & Actions -->
+                            <div class="studio-controls">
+                                <!-- Tool utility icons -->
+                                <div class="tool-icons-group">
+                                    <button id="undo-box-btn" class="studio-icon-btn hidden" type="button" title="Undo last box (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                                    <button id="delete-box-btn" class="studio-icon-btn danger hidden" type="button" title="Delete selected box (Del)"><i class="fas fa-trash-alt"></i></button>
+                                    <button id="clear-masks-btn" class="studio-icon-btn danger" type="button" title="Clear all boxes"><i class="fas fa-eraser"></i></button>
+                                    <button id="reset-placement-btn" class="studio-icon-btn hidden" type="button" title="Reset snippet positions"><i class="fas fa-rotate-left"></i></button>
+                                </div>
+
+                                <div class="controls-divider"></div>
+
+                                <!-- Flow actions -->
+                                <div class="flow-actions-group">
+                                    <button id="cancel-mask-btn" class="action-btn text-btn" type="button">Cancel</button>
+                                    <button id="mask-all-btn" class="action-btn secondary-btn hidden" type="button"><i class="fas fa-fill-drip"></i> <span>Mask All</span></button>
+                                    <button id="back-to-slip-btn" class="action-btn secondary-btn hidden" type="button"><i class="fas fa-arrow-left"></i> <span>Back</span></button>
+                                    
+                                    <button id="quick-apply-btn" class="action-btn subtle-btn hidden" type="button" title="Apply directly using default proportional alignment">
+                                        <i class="fas fa-bolt"></i> <span>Quick Apply</span>
+                                    </button>
+
+                                    <button id="go-to-arrange-btn" class="action-btn primary-glow-action hidden" type="button">
+                                        <span>Next: Position on Template</span> <i class="fas fa-arrow-right"></i>
+                                    </button>
+
+                                    <button id="save-masks-btn" class="action-btn success-glow-action" type="button">
+                                        <i class="fas fa-check-circle"></i> <span id="save-masks-label">Save & Apply Template</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="editor-viewport">
+
+                        <!-- Studio Subbar / Context Tip -->
+                        <div id="editor-hint-container" class="studio-hint-bar">
+                            <div class="hint-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                            <span id="editor-hint-text">Draw boxes over each text block (Amount, Ref, Name, etc.). Automatically adapts to any slip size!</span>
+                        </div>
+
+                        <!-- Step 1 Viewport -->
+                        <div id="slip-viewport" class="editor-viewport studio-viewport">
                             <canvas id="mask-canvas"></canvas>
+                        </div>
+
+                        <!-- Step 2 Viewport -->
+                        <div id="template-arrange-viewport" class="editor-viewport studio-viewport hidden">
+                            <div id="template-stage-wrapper" class="template-stage-wrapper">
+                                <canvas id="template-arrange-canvas"></canvas>
+                                <div id="template-snippets-overlay" class="template-snippets-overlay"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -126,7 +192,7 @@
         </main>
     </div>
 
-    <script src="js/slips.js?v=11"></script>
+    <script src="js/slips.js?v=15"></script>
 </body>
 
 </html>

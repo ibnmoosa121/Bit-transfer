@@ -1,0 +1,11 @@
+{
+  "name": "bit-transfer",
+  "version": "1.0.0",
+  "description": "Bit Transfer Crypto P2P platform",
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
