@@ -4,110 +4,892 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bit Transfer - Authentication</title>
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <title>Bit Transfer - Live Deposit Clearinghouse</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/cdm.css">
+    <style>
+        /* Single-scroll adjustments for mobile-first layout */
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding: 1.5rem 1rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Top Nav Header */
+        .top-navbar {
+            background: rgba(13, 20, 35, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .role-badge {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .role-badge:hover {
+            background: rgba(99, 102, 241, 0.25);
+        }
+
+        .role-selector-dropdown {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .role-selector-dropdown option {
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        /* Responsive section display */
+        .role-section {
+            display: none;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .role-section.active {
+            display: block;
+        }
+
+        /* Pipeline Styles */
+        .pipeline-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .pipeline-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+        }
+
+        .pipeline-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pipeline-amount {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .pipeline-status {
+            padding: 0.25rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-available {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .status-claimed {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--warning);
+        }
+
+        .status-paid {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+
+        .status-verified {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+        }
+
+        .status-rejected {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .pipeline-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            background: rgba(13, 20, 35, 0.5);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .pipeline-img-thumbnail {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pipeline-img-thumbnail:hover {
+            border-color: var(--accent-indigo);
+            transform: scale(1.05);
+        }
+
+        /* Large Action buttons */
+        .action-btn-large {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+        }
+
+        .action-btn-large:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-claim {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+            color: white;
+        }
+
+        .btn-paid {
+            background: linear-gradient(135deg, #3b82f6, var(--accent-cyan));
+            color: white;
+        }
+
+        .btn-verify {
+            background: linear-gradient(135deg, var(--success), #34d399);
+            color: white;
+        }
+
+        /* Large input block for Person A */
+        .amount-numpad-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .amount-display-box {
+            background: var(--bg-input);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .amount-display-box:focus-within {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+        }
+
+        .amount-display-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 2.2rem;
+            font-weight: 800;
+            width: 100%;
+            text-align: right;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .currency-symbol-lg {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-indigo);
+            margin-right: 0.5rem;
+        }
+
+        /* Lightbox modal zoom override */
+        .lightbox-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 10, 20, 0.95);
+            z-index: 1100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .lightbox-modal.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: var(--radius-md);
+            object-fit: contain;
+            transition: transform 0.2s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Sync status text */
+        .sync-status {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--text-muted);
+        }
+
+        .sync-status.connected i {
+            color: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        /* General inputs styling inside panels */
+        input[type="text"], textarea, select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.15);
+        }
+
+        .form-group-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        /* Mobile-First Responsive Overrides */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem 0.75rem;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+                border-radius: var(--radius-md);
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
+            }
+
+            .stat-title {
+                font-size: 0.7rem;
+            }
+
+            .top-navbar {
+                padding: 0.75rem 1rem;
+            }
+
+            .pipeline-card {
+                padding: 1rem;
+                border-radius: var(--radius-md);
+            }
+
+            .pipeline-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .pipeline-card-header div:last-child {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .pipeline-amount {
+                font-size: 1.3rem;
+            }
+
+            .pipeline-details {
+                font-size: 0.85rem;
+                padding: 0.6rem;
+            }
+
+            .pipeline-img-thumbnail {
+                width: 60px;
+                height: 60px;
+            }
+
+            /* Adjust drawer for full-screen on mobile */
+            .drawer {
+                width: 100% !important;
+            }
+
+            /* Adjust modals for mobile touch-targets */
+            .modal-content {
+                width: 95%;
+                padding: 1.25rem;
+            }
+
+            /* Touch targets and preventing iOS auto-zoom */
+            input[type="text"], input[type="number"], textarea, select, .action-btn-large, .btn-secondary {
+                font-size: 16px !important;
+                padding: 0.85rem !important;
+            }
+        }
+
+        /* Override stylesheet pointer-events and opacity rules to ensure modals are fully interactive */
+        .modal {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: 1050 !important;
+        }
+        .modal.active {
+            display: flex !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            z-index: 1050 !important;
+        }
+
+        /* Premium Amount Input Box Styling */
+        .amount-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--bg-input);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+            margin-top: 0.25rem;
+        }
+
+        .amount-input-wrapper:focus-within {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .currency-prefix {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-indigo);
+            padding-left: 1rem;
+        }
+
+        .amount-field {
+            width: 100%;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: var(--text-primary) !important;
+            font-size: 1.8rem !important;
+            font-weight: 800 !important;
+            padding: 0.75rem 1rem 0.75rem 0.5rem !important;
+            outline: none !important;
+        }
+
+        /* Custom File Upload Button Styling */
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: rgba(99, 102, 241, 0.05);
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            width: 100%;
+            text-align: center;
+            margin-top: 0.25rem;
+        }
+
+        .file-upload-label:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--accent-indigo);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+        }
+
+        .file-upload-label-required {
+            background: rgba(6, 182, 212, 0.05);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .file-upload-label-required:hover {
+            background: rgba(6, 182, 212, 0.15);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.1);
+        }
+
+        .file-upload-label-optional {
+            background: rgba(248, 250, 252, 0.02) !important;
+            border: 2px dashed rgba(255, 255, 255, 0.15) !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .file-upload-label-optional:hover {
+            background: rgba(248, 250, 252, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        .file-selected {
+            background: rgba(16, 185, 129, 0.08) !important;
+            border-color: var(--success) !important;
+            border-style: solid !important;
+            color: var(--success) !important;
+        }
+
+        /* Segmented Control Role Toggle */
+        .role-toggle-container {
+            display: flex;
+            align-items: center;
+            background: rgba(13, 20, 35, 0.6);
+            border: 1px solid var(--border-color);
+            padding: 2px;
+            border-radius: 30px;
+            position: relative;
+            user-select: none;
+            width: max-content;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .role-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.45rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.25s ease;
+            outline: none;
+            margin: 0;
+            width: auto;
+            height: auto;
+        }
+
+        .role-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .role-toggle-btn.active {
+            color: #ffffff;
+        }
+
+        .role-toggle-slider {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            left: 2px;
+            width: calc(50% - 2px);
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+            border-radius: 30px;
+            z-index: 1;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .role-toggle-container.role-c .role-toggle-slider {
+            transform: translateX(100%);
+        }
+
+        /* Excel Table View for Requester (Role A) */
+        .excel-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            margin-top: 1rem;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .excel-table th {
+            background: rgba(13, 20, 35, 0.9);
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .excel-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .excel-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .excel-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .excel-id {
+            font-family: monospace;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .excel-amount {
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .excel-dest {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .excel-dest-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .excel-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .excel-thumb:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-indigo);
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="forms-container">
-            <div class="signin-signup">
-                <!-- Sign In Form -->
-                <form action="#" class="sign-in-form">
-                    <h2 class="title">Sign In</h2>
-                    <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" id="signin-username" required>
+    <div class="app-layout">
+        <!-- Top Navbar Header -->
+        <nav class="top-navbar">
+            <div class="brand">
+                <i class="fas fa-money-bill-transfer"></i>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 700; font-size: 1.1rem; line-height: 1.1;">Bit Transfer</span>
+                    <div class="sync-status connected" id="realtime-indicator" style="font-size: 0.65rem; margin-top: 0.15rem; gap: 0.25rem;">
+                        <i class="fas fa-circle" style="font-size: 0.45rem;"></i>
+                        <span id="realtime-text">Live Sync</span>
                     </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" id="signin-password" required>
-                    </div>
-                    <input type="submit" value="Login" class="btn solid">
-                    <p class="social-text">Or Sign in with social platforms</p>
-                    <div class="social-media">
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-google"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                    </div>
-                </form>
-
-                <!-- Sign Up Form -->
-                <form action="#" class="sign-up-form">
-                    <h2 class="title">Sign Up</h2>
-                    <div class="input-field">
-                        <i class="fas fa-user"></i>
-                        <input type="text" placeholder="Username" id="signup-username" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" placeholder="Email" id="signup-email" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Password" id="signup-password" required>
-                    </div>
-                    <div class="input-field">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" placeholder="Confirm Password" id="signup-confirm-password" required>
-                    </div>
-                    <input type="submit" value="Sign Up" class="btn solid">
-                    <p class="social-text">Or Sign up with social platforms</p>
-                    <div class="social-media">
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-google"></i>
-                        </a>
-                        <a href="#" class="social-icon">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="panels-container">
-            <div class="panel left-panel">
-                <div class="content">
-                    <h3>New here?</h3>
-                    <p>Join our Crypto P2P platform and start trading securely with other users!</p>
-                    <button class="btn transparent" id="sign-up-btn">Sign Up</button>
-                    <br>
-                    <a href="slips.html" class="btn transparent"
-                        style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; margin-top: 15px; border-color: #fff;">
-                        <i class="fas fa-receipt" style="margin-right: 8px;"></i> Slips
-                    </a>
                 </div>
-                <img src="img/log.svg" class="image" alt="Login illustration">
             </div>
+            
+            <div class="role-toggle-container" id="role-toggle-container">
+                <div class="role-toggle-slider"></div>
+                <button class="role-toggle-btn active" data-role="A" id="role-btn-a">
+                    <i class="fas fa-list-check"></i> Requester
+                </button>
+                <button class="role-toggle-btn" data-role="C" id="role-btn-c">
+                    <i class="fas fa-wallet"></i> Depositor
+                </button>
+            </div>
+        </nav>
 
-            <div class="panel right-panel">
-                <div class="content">
-                    <h3>One of us?</h3>
-                    <p>Already have an account? Sign in to continue your crypto journey!</p>
-                    <button class="btn transparent" id="sign-in-btn">Sign In</button>
+        <!-- Main Content Area (Single Scroll) -->
+        <main class="main-content">
+            
+
+
+            <!-- ROLE SECTION: Person A (Requester Form) -->
+            <section class="role-section" id="section-role-a">
+                <!-- Posting Account Stats Row -->
+                <div class="stats-row" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                    <div class="stat-card" style="padding: 1rem; border-radius: var(--radius-md); background: rgba(13, 20, 35, 0.6); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="stat-title" style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Posted</span>
+                        <span class="stat-value" id="post-total-amount" style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">₹0.00</span>
+                    </div>
+                    <div class="stat-card" style="padding: 1rem; border-radius: var(--radius-md); background: rgba(13, 20, 35, 0.6); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="stat-title" style="font-size: 0.7rem; color: var(--success); text-transform: uppercase; font-weight: 600;">Success (Completed)</span>
+                        <span class="stat-value" id="post-success-amount" style="font-size: 1.25rem; font-weight: 700; color: var(--success);">₹0.00</span>
+                    </div>
+                    <div class="stat-card" style="padding: 1rem; border-radius: var(--radius-md); background: rgba(13, 20, 35, 0.6); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="stat-title" style="font-size: 0.7rem; color: var(--danger); text-transform: uppercase; font-weight: 600;">Failed (Rejected)</span>
+                        <span class="stat-value" id="post-failed-amount" style="font-size: 1.25rem; font-weight: 700; color: var(--danger);">₹0.00</span>
+                    </div>
                 </div>
-                <img src="img/register.svg" class="image" alt="Register illustration">
+
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-title">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Create Deposit Request</span>
+                    </div>
+                    <form id="request-form">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label class="form-group-label" for="req-amount">Amount of Deposit (₹)</label>
+                            <div class="amount-input-wrapper">
+                                <span class="currency-prefix">₹</span>
+                                <input type="number" step="0.01" min="0.01" id="req-amount" class="amount-field" placeholder="0.00" required>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label class="form-group-label" for="req-details-text">Destination Bank Details (Text Paste)</label>
+                                <textarea id="req-details-text" rows="3" placeholder="Paste bank account details here..."></textarea>
+                            </div>
+                            <div>
+                                <label class="form-group-label">Or Upload Bank Details Screenshot (Image)</label>
+                                <div class="custom-file-upload">
+                                    <label for="req-file-input" class="file-upload-label">
+                                        <i class="fas fa-image"></i>
+                                        <span id="req-file-status">Choose Bank Details Screenshot (Optional)</span>
+                                    </label>
+                                    <input type="file" id="req-file-input" accept="image/*" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="action-btn-large">
+                            <i class="fas fa-paper-plane"></i> Broadcast Request to Ledger
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+
+
+            <!-- UNIFIED SECTION: The Live Pipeline / Ledger -->
+            <section class="card">
+                <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div class="card-title" style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-list-check"></i>
+                            <span>Live Pipeline Ledger</span>
+                        </div>
+                        <button type="button" class="btn-secondary" id="btn-clear-workspace" style="height: 32px; padding: 0 0.6rem; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; font-size: 0.75rem; display: flex; align-items: center; gap: 0.35rem; margin: 0; background: rgba(239, 68, 68, 0.03); font-weight: 600;">
+                            <i class="fas fa-trash-can"></i> Clear Ledger
+                        </button>
+                    </div>
+                    
+                    <!-- Quick pipeline state filter (scrollable on mobile) -->
+                    <div class="filter-container" style="width: 100%; overflow-x: auto; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch;">
+                        <div class="filter-group" style="margin: 0; display: inline-flex; gap: 0.35rem; width: max-content;">
+                            <button class="filter-btn active" data-status-filter="All">All</button>
+                            <button class="filter-btn" data-status-filter="Available">Available</button>
+                            <button class="filter-btn" data-status-filter="Claimed">Claimed</button>
+                            <button class="filter-btn" data-status-filter="Paid">Paid</button>
+                            <button class="filter-btn" data-status-filter="Verified">Completed</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pipeline-ledger-container">
+                    <!-- Cards will be injected here in real-time -->
+                    <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
+                        <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent-indigo);"></i>
+                        <p>Connecting to database ledger...</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+
+
+    <!-- Upload Payment Proof Modal for Person C -->
+    <div class="modal" id="payment-modal">
+        <div class="modal-content" style="max-width: 500px; padding: 2rem;">
+            <div class="modal-title" style="margin-bottom: 1.5rem;">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <span>Submit Transfer Proof</span>
             </div>
+            
+            <form id="payment-submit-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="pay-submit-id">
+                
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase;">Amount to Transfer</span>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;" id="pay-amount-label">₹0.00</div>
+                </div>
+
+                <div>
+                    <label class="form-group-label" for="pay-ref">Transaction Reference / Journal No. (Optional)</label>
+                    <input type="text" id="pay-ref" placeholder="Enter bank reference number...">
+                </div>
+
+                <div>
+                    <label class="form-group-label">Upload Transfer Receipt Slip (Image)</label>
+                    <div class="custom-file-upload">
+                        <label for="pay-file-input" class="file-upload-label file-upload-label-required">
+                            <i class="fas fa-cloud-arrow-up"></i>
+                            <span id="pay-file-status">Choose Transfer Receipt Slip (Required)</span>
+                        </label>
+                        <input type="file" id="pay-file-input" accept="image/*" style="display: none;" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+                    <button type="button" class="btn-secondary" id="btn-cancel-payment">Cancel</button>
+                    <button type="submit" class="action-btn-large btn-paid" style="flex: 1; padding: 0.75rem;"><i class="fas fa-check"></i> Submit & Complete</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <!-- Rejection Reason Modal -->
+    <div class="modal" id="rejection-modal">
+        <div class="modal-content" style="max-width: 500px; padding: 2rem;">
+            <div class="modal-title" style="margin-bottom: 1.5rem; color: var(--danger);">
+                <i class="fas fa-circle-xmark"></i>
+                <span>Reject Deposit Submission</span>
+            </div>
+            
+            <form id="rejection-submit-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="reject-submit-id">
+                
+                <div>
+                    <label class="form-group-label" for="reject-comment">Rejection Comment / Reason (Mandatory)</label>
+                    <textarea id="reject-comment" rows="3" placeholder="Explain why the receipt slip or payment details are rejected..." required></textarea>
+                </div>
+
+                <div class="modal-footer" style="padding-top: 1rem; margin-top: 0;">
+                    <button type="button" class="btn-secondary" id="btn-cancel-rejection">Cancel</button>
+                    <button type="submit" class="action-btn-large btn-claim" style="flex: 1; padding: 0.75rem; background: linear-gradient(135deg, var(--danger), #ef4444);"><i class="fas fa-ban"></i> Confirm Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div class="lightbox-modal" id="lightbox">
+        <button class="drawer-close" id="btn-close-lightbox" style="top: 1.5rem; right: 1.5rem; font-size: 1.5rem; color: white;"><i class="fas fa-times"></i></button>
+        <img class="lightbox-content" id="lightbox-img" src="" alt="Enlarged screenshot">
+        
+        <!-- Image manipulation and WhatsApp share toolbar -->
+        <div class="img-toolbar" style="margin-top: 1.5rem; position: static;">
+            <button class="tool-btn" id="tool-light-rotate" title="Rotate 90deg"><i class="fas fa-rotate-right"></i></button>
+            <button class="tool-btn" id="tool-light-zoom-in" title="Zoom In"><i class="fas fa-magnifying-glass-plus"></i></button>
+            <button class="tool-btn" id="tool-light-zoom-out" title="Zoom Out"><i class="fas fa-magnifying-glass-minus"></i></button>
+            <button class="tool-btn" id="tool-light-whatsapp" title="Share to WhatsApp"><i class="fab fa-whatsapp" style="color: var(--success);"></i></button>
+            <button class="tool-btn" id="tool-light-reset" title="Reset Image"><i class="fas fa-rotate"></i></button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Supabase Client JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Application Logic Script -->
+    <script type="module" src="js/app.js"></script>
 </body>
 
 </html>
